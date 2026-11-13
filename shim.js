@@ -32,6 +32,8 @@ if(!C){
 }
 firebase.initializeApp(C);
 var auth=firebase.auth(), fs=firebase.firestore();
+// com a cache local, o Firestore não avisa quando o servidor confirma dados iguais; pedir também as mudanças de metadados para a página saber que os registos chegaram
+(function(){ var QP=firebase.firestore.Query.prototype, os=QP.onSnapshot; QP.onSnapshot=function(a){ if(typeof a==="function"||(a&&typeof a.next==="function"&&!("includeMetadataChanges" in a))) return os.apply(this,[{includeMetadataChanges:true}].concat([].slice.call(arguments))); return os.apply(this,arguments); }; })();
 if(C.emulator){ auth.useEmulator("http://127.0.0.1:9099"); }
 try{fs.settings({ignoreUndefinedProperties:true,merge:true});}catch(e){}
 if(C.emulator){ try{fs.useEmulator("127.0.0.1",8080);}catch(e){} }
