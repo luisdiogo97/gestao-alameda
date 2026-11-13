@@ -13,7 +13,7 @@ css.textContent="#fb_gate{position:fixed;inset:0;z-index:9999;background:var(--b
 "#fb_gate button{width:100%;margin:6px 0;padding:11px 12px;border-radius:8px;border:1px solid var(--line,#e3dfe0);background:var(--surface,#fff);font:inherit;font-weight:600;cursor:pointer;color:inherit}"+
 "#fb_gate button.pri{background:var(--wine,#7a1f3d);border-color:var(--wine,#7a1f3d);color:#fff}#fb_gate .err{color:#b3261e;font-size:13px;min-height:1em}#fb_gate .sep{text-align:center;color:var(--muted,#6b6468);font-size:12px;margin:10px 0}"+
 "#fb_gate img.lg{height:64px;display:block;margin:0 0 14px}#fb_gate code{font-size:12px;word-break:break-all}"+
-"#fb_bar{display:flex;gap:10px;align-items:center;justify-content:flex-end;font:13px Figtree,system-ui,sans-serif;color:var(--muted,#6b6468);padding:8px 16px 0;max-width:1400px;margin:0 auto}#fb_bar button{font:inherit;border:1px solid var(--line,#e3dfe0);background:var(--surface,#fff);border-radius:999px;padding:4px 12px;cursor:pointer;color:inherit}"+
+"#fb_bar{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;font:13px Figtree,system-ui,sans-serif;color:var(--muted,#6b6468);padding:28px 16px 8px;margin-top:20px;border-top:1px solid var(--line,#e3dfe0);max-width:1400px;margin:0 auto}#fb_bar button{font:inherit;border:1px solid var(--line,#e3dfe0);background:var(--surface,#fff);border-radius:999px;padding:4px 12px;cursor:pointer;color:inherit}"+
 "#fb_off{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:#3e5b4a;color:#fff;padding:8px 14px;border-radius:999px;font:13px Figtree,system-ui,sans-serif;z-index:9998}";
 document.head.appendChild(css);
 var gateEl=null;
@@ -54,7 +54,7 @@ function loginScreen(msg){
 }
 function bar(u,papel){ if(document.getElementById("fb_bar")) return; var b=document.createElement("div"); b.id="fb_bar";
   b.innerHTML='<span>'+esc(u.displayName||u.email||"")+(papel?" · "+esc(papel):"")+'</span><button type="button" id="fb_out">Sair</button>';
-  var w=document.querySelector(".wrap"); (w&&w.parentNode?w.parentNode:document.body).insertBefore(b,w||document.body.firstChild);
+  var w=document.querySelector(".wrap"); if(w&&w.parentNode){ w.parentNode.insertBefore(b,w.nextSibling); } else document.body.appendChild(b);
   b.querySelector("#fb_out").onclick=function(){auth.signOut().then(function(){location.reload();});};}
 function online(){ var o=document.getElementById("fb_off"); if(navigator.onLine){ if(o) o.remove(); } else if(!o){ o=document.createElement("div"); o.id="fb_off"; o.textContent="Sem rede: o que registares fica guardado e é enviado quando a rede voltar."; document.body.appendChild(o);} }
 window.addEventListener("online",online); window.addEventListener("offline",online);
