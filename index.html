@@ -6,8 +6,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=83704c90"></script>
-<script src="shim.js?v=83704c90"></script>
+<script src="firebase-config.js?v=ed8678c7"></script>
+<script src="shim.js?v=ed8678c7"></script>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:") addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
 <title>Gestão Alameda</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3368,7 +3368,10 @@ function svVinhos(){ const A=stAgg(), o=[];
     if(x.st>0) o.push({k:id+"|acabado",id,est:"acabado",n:pL(p),d:"com rótulo",max:x.st});
     if(x.pil>0) o.push({k:id+"|pilha",id,est:"pilha",n:pL(p),d:"sem rótulo",max:x.pil}); });
   return o; }
-function svCaixas(){ let S=[]; try{S=gMSstock()}catch(e){} return S.filter(i=>String(i.grupo||"")==="Embalagens de oferta").sort((a,b)=>(b.st>0)-(a.st>0)||String(a.nome).localeCompare(String(b.nome),"pt")); }
+// caixas especiais (Luis): mala de cortiça 3 grf e caixas petfelt 1 e 2 grf; a caixa de cartão da mala sai sempre com a mala
+const SV_CX=[["inv-caixas-mala-cortica-3-grf-alameda-mala","Mala de cortiça 3 grf"],["caixa-petfelt-1-grf","Caixa petfelt 1 grf"],["caixa-petfelt-2-grf","Caixa petfelt 2 grf"]];
+const SV_PAR={"inv-caixas-mala-cortica-3-grf-alameda-mala":"inv-caixas-cx-cartao-p-mala-c-impressao-a-6720010"};
+function svCaixas(){ let S=[]; try{S=gMSstock()}catch(e){} return SV_CX.map(([id,n])=>{const i=S.find(x=>x.id===id); return i?Object.assign({},i,{nome:n,par:S.find(x=>x.id===SV_PAR[id])||null}):null;}).filter(Boolean); }
 function svCliOpts(){ const v=sv_cli.value||SV_CF; let h=opt(SV_CF,"Cliente final",v===SV_CF);
   cliList().filter(([id])=>id!==SV_CF).forEach(([id,c])=>h+=opt(id,c.nome,id===v)); sv_cli.innerHTML=h; }
 function svStep(id,q){return `<div class="sv-q"><button type="button" data-svs="${id}" data-d="-1" aria-label="Menos">−</button><input type="number" min="0" step="1" inputmode="numeric" id="${id}" value="${q}"><button type="button" data-svs="${id}" data-d="1" aria-label="Mais">+</button></div>`;}
@@ -3382,7 +3385,7 @@ function svRender(fresh){
   sv_vinhos.innerHTML=SV.L.map((l,i)=>{ const v=V.find(x=>x.k===l.k);
     return `<div class="sv-l sv-lv"><select id="sv_vp${i}" aria-label="Vinho"><option value="">Escolher vinho…</option>${V.map(x=>opt(x.k,`${x.n} · ${x.d} (${int(x.max)})`,x.k===l.k)).join("")}${l.k&&!ok.has(l.k)?opt(l.k,pLid(l.k.split("|")[0])+" (sem stock)",true):""}</select>${svStep("sv_vq"+i,l.q)}${SV.L.length>1?`<button type="button" class="link sv-x" data-svdel="${i}">Retirar este vinho</button>`:""}</div>`; }).join("");
   const C=svCaixas();
-  sv_caixas.innerHTML=C.length?C.map(i=>`<div class="sv-l"><div class="sv-nm">${esc(i.nome)}<small>${int(i.st)} em stock</small></div>${svStep("sv_cx_"+i.id,SV.cx[i.id]||0).replace(`id="sv_cx_${i.id}"`,`id="sv_cx_${i.id}" data-svcx="${esc(i.id)}"`)}</div>`).join(""):`<p class="note">Não há caixas no grupo "Embalagens de oferta" da matéria seca.</p>`;
+  sv_caixas.innerHTML=C.length?C.map(i=>`<div class="sv-l"><div class="sv-nm">${esc(i.nome)}<small>${int(i.st)} em stock${i.par?" · sai com a caixa de cartão":""}</small></div>${svStep("sv_cx_"+i.id,SV.cx[i.id]||0).replace(`id="sv_cx_${i.id}"`,`id="sv_cx_${i.id}" data-svcx="${esc(i.id)}"`)}</div>`).join(""):`<p class="note">Não há caixas no grupo "Embalagens de oferta" da matéria seca.</p>`;
   svUlt();
 }
 function svRep(ano){ // linhas de vinho das saídas, por pessoa e destino
@@ -3418,6 +3421,7 @@ async function svSave(btn){
   SV.L.filter(l=>l.k&&l.q>0).forEach(l=>{const v=V.find(x=>x.k===l.k); if(!v){err.push("Um dos vinhos já não tem stock."); return;}
     const tot=SV.L.filter(z=>z.k===l.k).reduce((s,z)=>s+z.q,0); if(tot>v.max+0.5) err.push(`${v.n} ${v.d}: só há ${int(v.max)}.`); lin.push({v,q:l.q});});
   const cxs=C.filter(i=>(SV.cx[i.id]||0)>0).map(i=>({i,q:SV.cx[i.id]}));
+  cxs.slice().forEach(({i,q})=>{ if(i.par) cxs.push({i:i.par,q}); });
   const cxNeg=cxs.filter(({i,q})=>q>i.st+0.5).map(({i})=>i.nome);
   if(!lin.length&&!cxs.length){stMsg("Escolhe pelo menos um vinho ou uma caixa, com a quantidade.");return;}
   if(err.length){stMsg([...new Set(err)].join(" "));return;}
