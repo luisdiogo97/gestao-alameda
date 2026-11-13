@@ -6,8 +6,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=ed8678c7"></script>
-<script src="shim.js?v=ed8678c7"></script>
+<script src="firebase-config.js?v=4340ed84"></script>
+<script src="shim.js?v=4340ed84"></script>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:") addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
 <title>Gestão Alameda</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3363,10 +3363,12 @@ const SV_D={cliente:["Cliente","Venda"],oferta:["Oferta","Oferta / amostra"],con
 const svDest=m=>m.destino&&SV_D[m.destino]?SV_D[m.destino][0]:m.tipo==="Venda"?"Cliente":m.tipo==="Oferta / amostra"?"Oferta":m.tipo||"";
 const svPor=m=>m.porNome||(m.por?usNome(m.por):"Sem nome");
 const svGestor=()=>["Administrador","Enóloga e gestora"].includes(ROLE.papel);
-function svVinhos(){ const A=stAgg(), o=[];
-  allProd().forEach(([id,p])=>{ if(isAzP(p)) return; const x=A[id]; if(!x) return;
-    if(x.st>0) o.push({k:id+"|acabado",id,est:"acabado",n:pL(p),d:"com rótulo",max:x.st});
-    if(x.pil>0) o.push({k:id+"|pilha",id,est:"pilha",n:pL(p),d:"sem rótulo",max:x.pil}); });
+// ordem (Luis): primeiro os produtos no mercado, depois os outros por ordem alfabética e ano
+function svVinhos(){ const A=stAgg(), o=[], E=allProd().filter(([,p])=>!isAzP(p));
+  const merc=E.filter(([,p])=>pEst(p)==="mercado"), out=E.filter(([,p])=>pEst(p)!=="mercado").sort((a,b)=>String(a[1].nome).localeCompare(String(b[1].nome),"pt")||num(a[1].colheita)-num(b[1].colheita));
+  [[merc,"m"],[out,"o"]].forEach(([L,g])=>L.forEach(([id,p])=>{ const x=A[id]; if(!x) return;
+    if(x.st>0) o.push({k:id+"|acabado",id,est:"acabado",n:pL(p),d:"com rótulo",max:x.st,g});
+    if(x.pil>0) o.push({k:id+"|pilha",id,est:"pilha",n:pL(p),d:"sem rótulo",max:x.pil,g}); }));
   return o; }
 // caixas especiais (Luis): mala de cortiça 3 grf e caixas petfelt 1 e 2 grf; a caixa de cartão da mala sai sempre com a mala
 const SV_CX=[["inv-caixas-mala-cortica-3-grf-alameda-mala","Mala de cortiça 3 grf"],["caixa-petfelt-1-grf","Caixa petfelt 1 grf"],["caixa-petfelt-2-grf","Caixa petfelt 2 grf"]];
@@ -3383,7 +3385,7 @@ function svRender(fresh){
   if(!fresh) svRead(); if(!sv_data.value) sv_data.value=hoje(); svCliOpts();
   const V=svVinhos(), ok=new Set(V.map(v=>v.k));
   sv_vinhos.innerHTML=SV.L.map((l,i)=>{ const v=V.find(x=>x.k===l.k);
-    return `<div class="sv-l sv-lv"><select id="sv_vp${i}" aria-label="Vinho"><option value="">Escolher vinho…</option>${V.map(x=>opt(x.k,`${x.n} · ${x.d} (${int(x.max)})`,x.k===l.k)).join("")}${l.k&&!ok.has(l.k)?opt(l.k,pLid(l.k.split("|")[0])+" (sem stock)",true):""}</select>${svStep("sv_vq"+i,l.q)}${SV.L.length>1?`<button type="button" class="link sv-x" data-svdel="${i}">Retirar este vinho</button>`:""}</div>`; }).join("");
+    return `<div class="sv-l sv-lv"><select id="sv_vp${i}" aria-label="Vinho"><option value="">Escolher vinho…</option>${[["m","No mercado"],["o","Outros vinhos"]].map(([g,t])=>{const xs=V.filter(x=>x.g===g); return xs.length?`<optgroup label="${t}">${xs.map(x=>opt(x.k,`${x.n} · ${x.d}`,x.k===l.k)).join("")}</optgroup>`:"";}).join("")}${l.k&&!ok.has(l.k)?opt(l.k,pLid(l.k.split("|")[0])+" (sem stock)",true):""}</select>${svStep("sv_vq"+i,l.q)}${SV.L.length>1?`<button type="button" class="link sv-x" data-svdel="${i}">Retirar este vinho</button>`:""}</div>`; }).join("");
   const C=svCaixas();
   sv_caixas.innerHTML=C.length?C.map(i=>`<div class="sv-l"><div class="sv-nm">${esc(i.nome)}<small>${int(i.st)} em stock${i.par?" · sai com a caixa de cartão":""}</small></div>${svStep("sv_cx_"+i.id,SV.cx[i.id]||0).replace(`id="sv_cx_${i.id}"`,`id="sv_cx_${i.id}" data-svcx="${esc(i.id)}"`)}</div>`).join(""):`<p class="note">Não há caixas no grupo "Embalagens de oferta" da matéria seca.</p>`;
   svUlt();
