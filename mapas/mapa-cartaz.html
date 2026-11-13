@@ -304,12 +304,16 @@ draw();
   window.PZ=function(svg,o){
     o=o||{}; if(!svg||svg.__pz) return; svg.__pz=1; css();
     var box=o.box||svg.parentNode; box.classList.add("pz-box");
-    var b0=svg.getAttribute("viewBox").split(/[\s,]+/).map(Number), B={x:b0[0],y:b0[1],w:b0[2],h:b0[3]}, V={x:B.x,y:B.y,w:B.w,h:B.h};
+    var pv=function(t){var b=String(t||"0 0 100 100").split(/[\s,]+/).map(Number); return {x:b[0],y:b[1],w:b[2]||100,h:b[3]||100};};
+    var B=pv(svg.getAttribute("viewBox")), V={x:B.x,y:B.y,w:B.w,h:B.h}, last="";
+    // se a página mudar o viewBox (ex.: esquema da adega redesenhado), passa a ser a nova base
+    new MutationObserver(function(){ var t=svg.getAttribute("viewBox"); if(t===last) return; var z=V.w<B.w-0.5; B=pv(t); if(!z) V={x:B.x,y:B.y,w:B.w,h:B.h}; set(); }).observe(svg,{attributes:true,attributeFilter:["viewBox"]});
     var maxZ=o.max||8, P={}, moved=0, start=null, lastTap=0;
     function skip(){ return o.skip&&o.skip(); }
-    function set(){ var m=B.w/maxZ; V.w=Math.max(m,Math.min(B.w,V.w)); V.h=V.w*B.h/B.w;
-      V.x=Math.max(B.x,Math.min(B.x+B.w-V.w,V.x)); V.y=Math.max(B.y,Math.min(B.y+B.h-V.h,V.y));
-      svg.setAttribute("viewBox",V.x+" "+V.y+" "+V.w+" "+V.h); var z=V.w<B.w-0.5; svg.style.touchAction=z?"none":"pan-x pan-y"; rs.hidden=!z; ctl.classList.toggle("sm",box.clientHeight<300&&!box.classList.contains("pz-full")); }
+    function asp(){ var r=svg.getBoundingClientRect(); return box.classList.contains("pz-full")&&r.width>0?r.height/r.width:B.h/B.w; }
+    function set(){ var m=B.w/maxZ, A=asp(); V.w=Math.max(m,Math.min(B.w,V.w)); V.h=V.w*A;
+      V.x=V.w>=B.w?B.x+(B.w-V.w)/2:Math.max(B.x,Math.min(B.x+B.w-V.w,V.x)); V.y=V.h>=B.h?B.y+(B.h-V.h)/2:Math.max(B.y,Math.min(B.y+B.h-V.h,V.y));
+      last=V.x+" "+V.y+" "+V.w+" "+V.h; svg.setAttribute("viewBox",last); var z=V.w<B.w-0.5; svg.style.touchAction=z?"none":"pan-x pan-y"; rs.hidden=!z; ctl.classList.toggle("sm",box.clientHeight<300&&!box.classList.contains("pz-full")); }
     function pt(cx,cy){ var m=svg.getScreenCTM(); if(!m) return {x:V.x+V.w/2,y:V.y+V.h/2}; var p=svg.createSVGPoint(); p.x=cx; p.y=cy; return p.matrixTransform(m.inverse()); }
     function zoomAt(cx,cy,f){ var a=pt(cx,cy), nw=Math.max(B.w/maxZ,Math.min(B.w,V.w/f)), k=nw/V.w; V.x=a.x-(a.x-V.x)*k; V.y=a.y-(a.y-V.y)*k; V.w=nw; set(); }
     function zc(f){ var r=svg.getBoundingClientRect(); zoomAt(r.left+r.width/2,r.top+r.height/2,f); }
@@ -318,7 +322,7 @@ draw();
     box.appendChild(ctl); var bt=ctl.querySelectorAll("button"), rs=bt[2], fs=bt[3]; addEventListener("resize",function(){set()});
     bt[0].onclick=function(e){e.stopPropagation(); zc(1.6);}; bt[1].onclick=function(e){e.stopPropagation(); zc(1/1.6);};
     rs.onclick=function(e){e.stopPropagation(); V={x:B.x,y:B.y,w:B.w,h:B.h}; set();};
-    if(fs) fs.onclick=function(e){e.stopPropagation(); var on=!box.classList.contains("pz-full"); box.classList.toggle("pz-full",on); document.body.classList.toggle("pz-lock",on); fs.textContent=on?"✕":"⤢"; fs.setAttribute("aria-label",on?"Fechar ecrã inteiro":"Ecrã inteiro"); set(); if(o.onFull) o.onFull(on);};
+    if(fs) fs.onclick=function(e){e.stopPropagation(); var on=!box.classList.contains("pz-full"); box.classList.toggle("pz-full",on); document.body.classList.toggle("pz-lock",on); fs.textContent=on?"✕":"⤢"; if(on){ var A=asp(); if(A>B.h/B.w){ V.w=B.h/A; V.x=B.x; V.y=B.y; } } else { V={x:B.x,y:B.y,w:B.w,h:B.h}; } fs.setAttribute("aria-label",on?"Fechar ecrã inteiro":"Ecrã inteiro"); set(); if(o.onFull) o.onFull(on);};
     var hint=document.createElement("div"); hint.className="pz-hint"; hint.textContent="Afasta dois dedos para aproximar"; if(matchMedia("(pointer:coarse)").matches){ box.appendChild(hint); setTimeout(function(){hint.style.opacity=0; setTimeout(function(){hint.remove()},500)},3500); }
     svg.addEventListener("pointerdown",function(e){ if(skip()) return; P[e.pointerId]={x:e.clientX,y:e.clientY}; var n=Object.keys(P).length;
       if(n===1){ moved=0; start={x:e.clientX,y:e.clientY,v:{x:V.x,y:V.y}}; } else if(n===2){ moved=1; } });
