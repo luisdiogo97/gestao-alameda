@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Importar dados · Gestão Alameda</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Figtree:wght@400;500;600;700&display=swap">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="shim.js"></script>
+<style>
+:root{--bg:#f5f4f2;--surface:#fff;--ink:#1e1b1d;--muted:#6b6468;--line:#e3dfe0;--wine:#7a1f3d}
+@media (prefers-color-scheme:dark){:root{--bg:#171415;--surface:#221e20;--ink:#f1ecee;--muted:#a79fa3;--line:#3a3437;--wine:#c45a7c}}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Figtree,system-ui,sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:32px 16px}
+h1{font-family:Newsreader,Georgia,serif;font-size:30px;margin:0 0 8px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;margin:16px 0}
+button{padding:10px 16px;border-radius:8px;border:1px solid var(--wine);background:var(--wine);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+table{width:100%;border-collapse:collapse;font-size:14px}td{padding:4px 0;border-bottom:1px solid var(--line)}td:last-child{text-align:right}
+.muted{color:var(--muted)}.err{color:#b3261e}.ok{color:#3e5b4a;font-weight:600}
+progress{width:100%;height:10px}
+</style></head><body>
+<div class="wrap">
+  <h1>Importar dados</h1>
+  <p class="muted">Carrega o ficheiro <b>dados-alameda-….json</b> que o Claude preparou com os registos da gestão antiga. Só um administrador pode importar. Os registos com o mesmo identificador são substituídos; nada mais é apagado.</p>
+  <div class="card">
+    <p id="st" class="muted">A ligar…</p>
+    <input type="file" id="f" accept=".json,application/json" disabled>
+    <div id="prev"></div>
+    <p><button id="go" disabled>Importar</button></p>
+    <progress id="pg" value="0" max="1" hidden></progress>
+    <p id="res"></p>
+  </div>
+  <p><a href="./">Voltar à gestão</a></p>
+</div>
+<script>
+let DB=null, DATA=null;
+const $=id=>document.getElementById(id);
+claude.use("db").then(async db=>{
+  DB=db; const u=window.ALAMEDA_FB.auth.currentUser, d=await db.doc("config/utilizadores").get(), m=d.exists&&d.data().membros&&d.data().membros[u.uid];
+  if(!m||m.papel!=="Administrador"){$("st").innerHTML='<span class="err">Só um administrador pode importar dados.</span>'; return;}
+  $("st").textContent="Ligado como "+(u.email||u.displayName)+". Escolhe o ficheiro."; $("f").disabled=false;
+});
+$("f").onchange=async e=>{const file=e.target.files[0]; if(!file) return;
+  try{const j=JSON.parse(await file.text()); DATA=j.colecoes||j;}catch(err){$("prev").innerHTML='<p class="err">Este ficheiro não é um JSON válido.</p>'; return;}
+  const rows=Object.entries(DATA).map(([c,o])=>`<tr><td>${c}</td><td>${Object.keys(o).length}</td></tr>`).join("");
+  const n=Object.values(DATA).reduce((s,o)=>s+Object.keys(o).length,0);
+  $("prev").innerHTML=`<p>${n} registos em ${Object.keys(DATA).length} coleções:</p><table>${rows}</table>`; $("go").disabled=false;};
+$("go").onclick=async()=>{ if(!DATA||!DB) return; $("go").disabled=true; $("f").disabled=true;
+  const all=[]; Object.entries(DATA).forEach(([c,o])=>{ if(c==="config") Object.entries(o).forEach(([id,d])=>{ if(!["utilizadores","dono"].includes(id)) all.push([c,id,d]); }); else Object.entries(o).forEach(([id,d])=>all.push([c,id,d])); });
+  $("pg").hidden=false; $("pg").max=all.length; let done=0;
+  try{ for(let i=0;i<all.length;i+=400){ const b=DB.batch(); all.slice(i,i+400).forEach(([c,id,d])=>b.set(DB.collection(c).doc(id),d)); await b.commit(); done=Math.min(all.length,i+400); $("pg").value=done; $("res").textContent=done+" de "+all.length+"…"; }
+    $("res").innerHTML=`<span class="ok">Importados ${all.length} registos.</span> Já podes voltar à gestão.`;
+  }catch(err){ $("res").innerHTML=`<span class="err">Parou em ${done} de ${all.length} (${err.code||err.message}). Podes voltar a importar o mesmo ficheiro: os que já entraram são só substituídos.</span>`; $("go").disabled=false; }
+};
+</script>
+</body></html>

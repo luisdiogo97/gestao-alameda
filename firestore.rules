@@ -1,0 +1,49 @@
+rules_version = '2';
+// Regras da Gestão da Quinta da Alameda.
+// Papéis em config/utilizadores { membros: { <uid>: { papel } } }.
+//   Administrador: tudo.  Enóloga e gestora: tudo menos mudar papéis.
+//   Adegueiro: tudo menos faturas, clientes, despesas, tesouraria, orçamento e custos.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signed() { return request.auth != null; }
+    function U() { return get(/databases/$(database)/documents/config/utilizadores).data.membros; }
+    function papel() { return signed() && exists(/databases/$(database)/documents/config/utilizadores) && (request.auth.uid in U()) ? U()[request.auth.uid].papel : ''; }
+    function member() { return papel() in ['Administrador', 'Enóloga e gestora', 'Adegueiro']; }
+    function gestor() { return papel() in ['Administrador', 'Enóloga e gestora']; }
+    function admin() { return papel() == 'Administrador'; }
+
+    // Dados da adega, vinha, stock, matéria seca, enológicos, enoturismo, azeite…
+    match /{col}/{id} {
+      allow read, write: if member() && !(col in ['faturas', 'clientes', 'despesas', 'ts_linhas', 'orcamento', 'config', 'perfis', 'registo']);
+    }
+    // Dados financeiros: só administradores e enóloga/gestora
+    match /faturas/{id}   { allow read, write: if gestor(); }
+    match /clientes/{id}  { allow read, write: if gestor(); }
+    match /despesas/{id}  { allow read, write: if gestor(); }
+    match /ts_linhas/{id} { allow read, write: if gestor(); }
+    match /orcamento/{id} { allow read, write: if gestor(); }
+
+    match /config/{id} {
+      allow read: if (id == 'utilizadores' || id == 'dono') ? signed() : ((id in ['tesouraria', 'custos']) ? gestor() : member());
+      allow write: if !(id in ['utilizadores', 'dono', 'tesouraria', 'custos']) && member();
+      allow write: if (id in ['tesouraria', 'custos']) && gestor();
+      allow write: if id == 'utilizadores' && admin();
+      // primeira configuração: a primeira pessoa fica administradora
+      allow create: if id == 'utilizadores' && signed()
+        && request.resource.data.membros.keys().hasOnly([request.auth.uid])
+        && request.resource.data.membros[request.auth.uid].papel == 'Administrador';
+      allow create: if id == 'dono' && signed() && request.resource.data.uid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/config/utilizadores).data.membros[request.auth.uid].papel == 'Administrador';
+    }
+    // Perfis (nome e email de quem entrou)
+    match /perfis/{uid} {
+      allow read: if gestor() || (signed() && request.auth.uid == uid);
+      allow write: if signed() && request.auth.uid == uid;
+    }
+    // Registo de alterações de cada pessoa
+    match /registo/{uid}/dias/{dia} {
+      allow read: if gestor() || (signed() && request.auth.uid == uid);
+      allow write: if (member() && request.auth.uid == uid) || gestor();
+    }
+  }
+}
