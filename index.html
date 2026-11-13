@@ -6,8 +6,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=1c6bc84f"></script>
-<script src="shim.js?v=1c6bc84f"></script>
+<script src="firebase-config.js?v=e940896a"></script>
+<script src="shim.js?v=e940896a"></script>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:") addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
 <title>Gestão Alameda</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -243,6 +243,8 @@ details summary{cursor:pointer;font-weight:600;color:var(--wine)}
 .sv-go{width:100%;margin-top:14px;padding:14px;font-size:17px}
 .sv-u{padding:10px 0;border-bottom:1px solid var(--line)}
 .sv-u b{display:block}.sv-u .note{margin:2px 0 0}
+.mapfr{position:relative}.mapfr .mf-b{position:absolute;left:8px;top:8px;z-index:6;min-height:0;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.95);color:#222;border:1px solid rgba(0,0,0,.18);font-weight:700;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.mapfr.pz-full{display:block;padding:0}.mapfr.pz-full iframe{width:100%!important;height:100%!important;border:0!important;border-radius:0!important}.mapfr.pz-full .mf-b{top:max(8px,env(safe-area-inset-top,0px))}
 /* ===== Telemóvel (v80) ===== */
 @media (max-width:700px){
   body{padding-left:max(10px, env(safe-area-inset-left, 0px));padding-right:max(10px, env(safe-area-inset-right, 0px));padding-top:max(8px, env(safe-area-inset-top, 0px));padding-bottom:calc(30px + env(safe-area-inset-bottom, 0px))}
@@ -285,6 +287,8 @@ details summary{cursor:pointer;font-weight:600;color:var(--wine)}
   table.mc input[type=number],table.mc input[type=text],table.mc select{width:100%;max-width:100%}
   table.mc input.sm{width:100%}
   .scroll:has(> table.mc){overflow-x:visible}
+  #vm_svg,#pl_svg{min-width:0}
+  .mapfr iframe{height:calc(100dvh - 120px)!important;min-height:420px}
 }
 header{justify-content:center;text-align:center}header>div{display:flex;flex-direction:column;align-items:center;width:100%}
 header .logo{height:104px;margin:0 auto 6px}#hTitle,header .eyebrow{display:none}#hSub{margin:0 auto;max-width:640px}
@@ -3478,6 +3482,86 @@ document.addEventListener("focusout",e=>{if(e.target.closest&&e.target.closest("
 setInterval(()=>{ try{ if(ST.db&&ST.ready.c&&svGestor()&&!ST.C[SV_CF]&&!SV.cfTried){SV.cfTried=1; ST.db.collection("clientes").doc(SV_CF).set({nome:"Cliente final",tipo:"Particular (loja da quinta)",nif:"",localidade:"",contacto:"",notas:"Para vendas a particulares sem ficha",criadoEm:new Date().toISOString()}).catch(()=>{});} }catch(e){} },3000);
 </script>
 
+<script>
+/* Zoom e arrastar em mapas SVG (pinça, botões + e −, ecrã inteiro). Muda só o viewBox, por isso os toques nos pontos continuam a funcionar. */
+(function(){
+  if(window.PZ) return;
+  var CSS=".pz-box{position:relative}.pz-ctl{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px;z-index:5}"+
+    ".pz-ctl button{width:40px;height:40px;min-height:0;padding:0;border-radius:10px;border:1px solid rgba(0,0,0,.18);background:rgba(255,255,255,.94);color:#222;font:700 20px/1 system-ui,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.18);cursor:pointer}"+
+    ".pz-ctl.sm{flex-direction:row;top:6px;right:6px;gap:4px}.pz-ctl.sm button{width:32px;height:32px;font-size:17px;border-radius:8px}.pz-ctl button[hidden]{display:none}.pz-hint{position:absolute;left:8px;bottom:8px;z-index:5;background:rgba(255,255,255,.9);color:#333;font:12px system-ui,sans-serif;padding:4px 8px;border-radius:8px;pointer-events:none;transition:opacity .4s}"+
+    ".pz-full{position:fixed!important;inset:0!important;z-index:9999!important;margin:0!important;border-radius:0!important;background:var(--ground,var(--bg,#f4f2ee))!important;display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}"+
+    ".pz-full>svg{width:100%!important;height:100%!important;min-width:0!important;max-height:100%}.pz-full .pz-ctl{top:max(10px,env(safe-area-inset-top,0px))}body.pz-lock{overflow:hidden}@media print{.pz-ctl,.pz-hint{display:none!important}}";
+  function css(){ if(document.getElementById("pz-css")) return; var s=document.createElement("style"); s.id="pz-css"; s.textContent=CSS; document.head.appendChild(s); }
+  window.PZ=function(svg,o){
+    o=o||{}; if(!svg||svg.__pz) return; svg.__pz=1; css();
+    var box=o.box||svg.parentNode; box.classList.add("pz-box");
+    var b0=svg.getAttribute("viewBox").split(/[\s,]+/).map(Number), B={x:b0[0],y:b0[1],w:b0[2],h:b0[3]}, V={x:B.x,y:B.y,w:B.w,h:B.h};
+    var maxZ=o.max||8, P={}, moved=0, start=null, lastTap=0;
+    function skip(){ return o.skip&&o.skip(); }
+    function set(){ var m=B.w/maxZ; V.w=Math.max(m,Math.min(B.w,V.w)); V.h=V.w*B.h/B.w;
+      V.x=Math.max(B.x,Math.min(B.x+B.w-V.w,V.x)); V.y=Math.max(B.y,Math.min(B.y+B.h-V.h,V.y));
+      svg.setAttribute("viewBox",V.x+" "+V.y+" "+V.w+" "+V.h); var z=V.w<B.w-0.5; svg.style.touchAction=z?"none":"pan-x pan-y"; rs.hidden=!z; ctl.classList.toggle("sm",box.clientHeight<300&&!box.classList.contains("pz-full")); }
+    function pt(cx,cy){ var m=svg.getScreenCTM(); if(!m) return {x:V.x+V.w/2,y:V.y+V.h/2}; var p=svg.createSVGPoint(); p.x=cx; p.y=cy; return p.matrixTransform(m.inverse()); }
+    function zoomAt(cx,cy,f){ var a=pt(cx,cy), nw=Math.max(B.w/maxZ,Math.min(B.w,V.w/f)), k=nw/V.w; V.x=a.x-(a.x-V.x)*k; V.y=a.y-(a.y-V.y)*k; V.w=nw; set(); }
+    function zc(f){ var r=svg.getBoundingClientRect(); zoomAt(r.left+r.width/2,r.top+r.height/2,f); }
+    var ctl=document.createElement("div"); ctl.className="pz-ctl";
+    ctl.innerHTML='<button type="button" aria-label="Aproximar">+</button><button type="button" aria-label="Afastar">−</button><button type="button" aria-label="Ver tudo" title="Ver tudo">⟲</button>'+(o.full===false?"":'<button type="button" aria-label="Ecrã inteiro" title="Ecrã inteiro">⤢</button>');
+    box.appendChild(ctl); var bt=ctl.querySelectorAll("button"), rs=bt[2], fs=bt[3]; addEventListener("resize",function(){set()});
+    bt[0].onclick=function(e){e.stopPropagation(); zc(1.6);}; bt[1].onclick=function(e){e.stopPropagation(); zc(1/1.6);};
+    rs.onclick=function(e){e.stopPropagation(); V={x:B.x,y:B.y,w:B.w,h:B.h}; set();};
+    if(fs) fs.onclick=function(e){e.stopPropagation(); var on=!box.classList.contains("pz-full"); box.classList.toggle("pz-full",on); document.body.classList.toggle("pz-lock",on); fs.textContent=on?"✕":"⤢"; fs.setAttribute("aria-label",on?"Fechar ecrã inteiro":"Ecrã inteiro"); set(); if(o.onFull) o.onFull(on);};
+    var hint=document.createElement("div"); hint.className="pz-hint"; hint.textContent="Afasta dois dedos para aproximar"; if(matchMedia("(pointer:coarse)").matches){ box.appendChild(hint); setTimeout(function(){hint.style.opacity=0; setTimeout(function(){hint.remove()},500)},3500); }
+    svg.addEventListener("pointerdown",function(e){ if(skip()) return; P[e.pointerId]={x:e.clientX,y:e.clientY}; var n=Object.keys(P).length;
+      if(n===1){ moved=0; start={x:e.clientX,y:e.clientY,v:{x:V.x,y:V.y}}; } else if(n===2){ moved=1; } });
+    svg.addEventListener("pointermove",function(e){ if(!P[e.pointerId]||skip()) return; var ids=Object.keys(P), prev=P[e.pointerId];
+      if(ids.length>=2){ var o2=P[ids[0]==e.pointerId?ids[1]:ids[0]], d0=Math.hypot(prev.x-o2.x,prev.y-o2.y); P[e.pointerId]={x:e.clientX,y:e.clientY};
+        var d1=Math.hypot(e.clientX-o2.x,e.clientY-o2.y); if(d0>0){ zoomAt((e.clientX+o2.x)/2,(e.clientY+o2.y)/2,d1/d0); } e.preventDefault(); return; }
+      P[e.pointerId]={x:e.clientX,y:e.clientY};
+      if(start&&V.w<B.w-0.5){ var dx=e.clientX-start.x, dy=e.clientY-start.y; if(Math.abs(dx)+Math.abs(dy)>6) moved=1;
+        if(moved){ var m=svg.getScreenCTM(); var s=m?m.a:1; V.x=start.v.x-dx/s; V.y=start.v.y-dy/s; set(); e.preventDefault(); } } });
+    function up(e){ delete P[e.pointerId]; if(!Object.keys(P).length) start=null; else { var k=Object.keys(P)[0]; start={x:P[k].x,y:P[k].y,v:{x:V.x,y:V.y}}; } }
+    svg.addEventListener("pointerup",up); svg.addEventListener("pointercancel",up); svg.addEventListener("pointerleave",function(e){ if(e.pointerType==="mouse") up(e); });
+    svg.addEventListener("click",function(e){ if(moved){ e.stopPropagation(); e.preventDefault(); moved=0; } },true);
+    svg.addEventListener("dblclick",function(e){ if(skip()) return; zoomAt(e.clientX,e.clientY,2); e.preventDefault(); });
+    svg.addEventListener("wheel",function(e){ if(skip()||!(e.ctrlKey||V.w<B.w-0.5)) return; e.preventDefault(); zoomAt(e.clientX,e.clientY,Math.exp(-e.deltaY/300)); },{passive:false});
+    document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&box.classList.contains("pz-full")&&fs) fs.click(); });
+    set(); return {reset:function(){rs.onclick({stopPropagation:function(){}})}, base:B};
+  };
+  /* mesma ideia para um bloco HTML (ex.: o cartaz): escala com transform dentro de uma caixa */
+  window.PZel=function(box,el,o){
+    o=o||{}; if(!box||box.__pz) return; box.__pz=1; css(); box.classList.add("pz-box"); box.style.overflow="hidden"; el.style.transformOrigin="0 0";
+    var S={s:1,x:0,y:0}, P={}, start=null, maxZ=o.max||6;
+    function set(){ S.s=Math.max(1,Math.min(maxZ,S.s)); var W=box.clientWidth, H=box.clientHeight, w=el.offsetWidth*S.s, h=el.offsetHeight*S.s;
+      S.x=Math.min(0,Math.max(W-w,S.x)); S.y=Math.min(0,Math.max(Math.min(0,H-h),S.y)); el.style.transform="translate("+S.x+"px,"+S.y+"px) scale("+S.s+")";
+      var z=S.s>1.001; box.style.touchAction=z?"none":"pan-x pan-y"; rs.hidden=!z; }
+    function zoomAt(cx,cy,f){ var r=box.getBoundingClientRect(), px=cx-r.left, py=cy-r.top, ns=Math.max(1,Math.min(maxZ,S.s*f)), k=ns/S.s; S.x=px-(px-S.x)*k; S.y=py-(py-S.y)*k; S.s=ns; set(); }
+    function zc(f){ var r=box.getBoundingClientRect(); zoomAt(r.left+r.width/2,r.top+Math.min(r.height,el.offsetHeight*S.s)/2,f); }
+    var ctl=document.createElement("div"); ctl.className="pz-ctl"; ctl.innerHTML='<button type="button" aria-label="Aproximar">+</button><button type="button" aria-label="Afastar">−</button><button type="button" aria-label="Ver tudo">⟲</button>';
+    box.appendChild(ctl); var bt=ctl.querySelectorAll("button"), rs=bt[2];
+    bt[0].onclick=function(){zc(1.6)}; bt[1].onclick=function(){zc(1/1.6)}; rs.onclick=function(){S={s:1,x:0,y:0}; set();};
+    box.addEventListener("pointerdown",function(e){ if(e.target.closest(".pz-ctl")) return; P[e.pointerId]={x:e.clientX,y:e.clientY}; start={x:e.clientX,y:e.clientY,sx:S.x,sy:S.y}; });
+    box.addEventListener("pointermove",function(e){ if(!P[e.pointerId]) return; var ids=Object.keys(P), prev=P[e.pointerId];
+      if(ids.length>=2){ var o2=P[ids[0]==e.pointerId?ids[1]:ids[0]], d0=Math.hypot(prev.x-o2.x,prev.y-o2.y); P[e.pointerId]={x:e.clientX,y:e.clientY}; var d1=Math.hypot(e.clientX-o2.x,e.clientY-o2.y); if(d0>0) zoomAt((e.clientX+o2.x)/2,(e.clientY+o2.y)/2,d1/d0); e.preventDefault(); return; }
+      P[e.pointerId]={x:e.clientX,y:e.clientY}; if(start&&S.s>1.001){ S.x=start.sx+e.clientX-start.x; S.y=start.sy+e.clientY-start.y; set(); e.preventDefault(); } });
+    function up(e){ delete P[e.pointerId]; var k=Object.keys(P)[0]; start=k?{x:P[k].x,y:P[k].y,sx:S.x,sy:S.y}:null; }
+    box.addEventListener("pointerup",up); box.addEventListener("pointercancel",up);
+    box.addEventListener("dblclick",function(e){ zoomAt(e.clientX,e.clientY,2); });
+    addEventListener("resize",set); set();
+  };
+})();
+/* mapas na gestão (v87): zoom no mapa da vinha; mapas do enoturismo com botão de ecrã inteiro */
+(function(){
+  function go(){
+    var v=document.getElementById("vm_svg"); if(v) PZ(v,{box:v.parentNode,skip:function(){return v.classList.contains("ed");}});
+    document.querySelectorAll('iframe[data-src^="mapas/"]').forEach(function(f){ if(f.parentNode.classList.contains("mapfr")) return;
+      var w=document.createElement("div"); w.className="mapfr"; f.parentNode.insertBefore(w,f); w.appendChild(f);
+      var b=document.createElement("button"); b.type="button"; b.className="mf-b"; b.textContent="⤢ Ecrã inteiro"; w.appendChild(b);
+      b.onclick=function(){ var on=!w.classList.contains("pz-full"); w.classList.toggle("pz-full",on); document.body.classList.toggle("pz-lock",on); b.textContent=on?"✕ Fechar":"⤢ Ecrã inteiro"; };
+      document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&w.classList.contains("pz-full")) b.click(); }); });
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",go); else go();
+})();
+</script>
 <script>
 /* Telemóvel (v80): tabelas largas passam a cartões, com o nome da coluna em cada valor. */
 (function(){
