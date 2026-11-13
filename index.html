@@ -6,8 +6,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=4340ed84"></script>
-<script src="shim.js?v=4340ed84"></script>
+<script src="firebase-config.js?v=f42efa81"></script>
+<script src="shim.js?v=f42efa81"></script>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:") addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
 <title>Gestão Alameda</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -231,7 +231,15 @@ details summary{cursor:pointer;font-weight:600;color:var(--wine)}
 .sv-q input[type=number]{width:58px;height:40px;text-align:center;font-size:17px}
 .sv-lv select{grid-column:1 / -1}.sv-lv .sv-q{grid-column:2;grid-row:2}
 .sv-x{grid-column:1;grid-row:2;justify-self:start;font-size:13px}
-.sv-add{margin:8px 0 0}
+.sv-add{margin:10px 0 0;width:100%}
+.sv-search{width:100%;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--input);color:var(--ink);margin:0 0 6px}
+.sv-g{margin:10px 0 2px;font-size:12px;font-weight:700;color:var(--muted)}
+.sv-wn{padding:8px 0;border-bottom:1px solid var(--line)}
+.sv-wn .sv-nm{font-weight:600;font-size:15px}
+.sv-wn .sv-o{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px}
+.sv-wn .sv-o span{color:var(--muted);font-size:13px}
+.sv-wn.on{background:var(--wine-soft);border-radius:8px;padding-left:8px;padding-right:8px}
+.sv-sum{margin:14px 0 0;font-weight:700;font-size:15px}
 .sv-go{width:100%;margin-top:14px;padding:14px;font-size:17px}
 .sv-u{padding:10px 0;border-bottom:1px solid var(--line)}
 .sv-u b{display:block}.sv-u .note{margin:2px 0 0}
@@ -501,12 +509,14 @@ header .logo{height:104px;margin:0 auto 6px}#hTitle,header .eyebrow{display:none
           <div class="sv-row" id="sv_cliF" hidden><label for="sv_cli">Cliente</label><select id="sv_cli"></select></div>
           <div class="sv-row" id="sv_paraF"><label for="sv_para">Para quem / motivo</label><input type="text" id="sv_para" placeholder="ex.: visita, prémio, amigo…"></div>
           <h3 class="sv-h">Vinhos</h3>
+          <input type="search" id="sv_q" class="sv-search" placeholder="Procurar vinho (ex.: torreão 2020)" autocomplete="off">
           <div id="sv_vinhos"></div>
-          <button type="button" id="sv_addv" class="sv-add">+ Outro vinho</button>
+          <button type="button" id="sv_more" class="sv-add"></button>
+          <div id="sv_outros" hidden></div>
           <h3 class="sv-h">Caixas especiais</h3>
           <div id="sv_caixas"></div>
           <div class="sv-row"><label for="sv_nota">Notas</label><input type="text" id="sv_nota" placeholder="opcional"></div>
-          <div id="sv_res" class="note"></div>
+          <div id="sv_sum" class="sv-sum"></div>
           <button type="button" id="sv_save" class="primary sv-go">Registar saída</button>
         </div>
         <div class="card sv-card">
@@ -3357,7 +3367,7 @@ document.addEventListener("change",async e=>{
 </script>
 <script>
 /* ---------- Saídas do armazém (v82): vinhos engarrafados (com ou sem rótulo) e caixas especiais ---------- */
-const SV={modo:"oferta",L:[{k:"",q:1}],cx:{}};
+const SV={modo:"oferta",q:{},cx:{},more:false};
 const SV_CF="cliente-final";
 const SV_D={cliente:["Cliente","Venda"],oferta:["Oferta","Oferta / amostra"],consumo:["Consumo","Consumo"],movecho:["Movecho","Movecho"],casa:["Casa da Alameda","Casa da Alameda"]};
 const svDest=m=>m.destino&&SV_D[m.destino]?SV_D[m.destino][0]:m.tipo==="Venda"?"Cliente":m.tipo==="Oferta / amostra"?"Oferta":m.tipo||"";
@@ -3377,18 +3387,29 @@ function svCaixas(){ let S=[]; try{S=gMSstock()}catch(e){} return SV_CX.map(([id
 function svCliOpts(){ const v=sv_cli.value||SV_CF; let h=opt(SV_CF,"Cliente final",v===SV_CF);
   cliList().filter(([id])=>id!==SV_CF).forEach(([id,c])=>h+=opt(id,c.nome,id===v)); sv_cli.innerHTML=h; }
 function svStep(id,q){return `<div class="sv-q"><button type="button" data-svs="${id}" data-d="-1" aria-label="Menos">−</button><input type="number" min="0" step="1" inputmode="numeric" id="${id}" value="${q}"><button type="button" data-svs="${id}" data-d="1" aria-label="Mais">+</button></div>`;}
-function svRead(){ SV.L.forEach((l,i)=>{const s=document.getElementById("sv_vp"+i), q=document.getElementById("sv_vq"+i); if(s) l.k=s.value; if(q) l.q=Math.max(0,Math.round(num(q.value)));});
-  document.querySelectorAll("[data-svcx]").forEach(e=>SV.cx[e.dataset.svcx]=Math.max(0,Math.round(num(e.value)))); }
+const svWid=k=>"sv_w_"+k.replace(/\|/g,"__");
+function svRead(){ document.querySelectorAll("[data-svw]").forEach(e=>{const q=Math.max(0,Math.round(num(e.value))); if(q) SV.q[e.dataset.svw]=q; else delete SV.q[e.dataset.svw]; const w=e.closest(".sv-wn"); if(w) w.classList.toggle("on",[...w.querySelectorAll("[data-svw]")].some(x=>num(x.value)>0));});
+  document.querySelectorAll("[data-svcx]").forEach(e=>SV.cx[e.dataset.svcx]=Math.max(0,Math.round(num(e.value))));
+  const g=Object.values(SV.q).reduce((a,b)=>a+b,0), nv=Object.keys(SV.q).length, nc=Object.values(SV.cx).reduce((a,b)=>a+b,0);
+  if(typeof sv_sum!=="undefined") sv_sum.textContent=g||nc?`A levar: ${g?`${int(g)} garrafa${g>1?"s":""}${nv>1?` (${nv} vinhos)`:""}`:""}${g&&nc?" e ":""}${nc?`${int(nc)} caixa${nc>1?"s":""}`:""}`:""; }
+function svWines(V,g){ const by={}, ord=[]; V.filter(x=>x.g===g).forEach(x=>{ if(!by[x.id]){by[x.id]=[]; ord.push(x.id);} by[x.id].push(x); });
+  return ord.map(id=>{ const xs=by[id], on=xs.some(x=>SV.q[x.k]>0);
+    return `<div class="sv-wn${on?" on":""}" data-n="${esc((xs[0].n).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""))}"><div class="sv-nm">${esc(xs[0].n)}</div>${xs.map(x=>`<div class="sv-o"><span>${x.d}</span>${svStep(svWid(x.k),SV.q[x.k]||0).replace(`id="${svWid(x.k)}"`,`id="${svWid(x.k)}" data-svw="${esc(x.k)}"`)}</div>`).join("")}</div>`; }).join(""); }
+function svFilter(){ const t=(sv_q.value||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").split(/\s+/).filter(Boolean);
+  const show=SV.more||t.length>0; sv_outros.hidden=!show; let no=0;
+  document.querySelectorAll("#sv_vinhos .sv-wn,#sv_outros .sv-wn").forEach(w=>{const ok=t.every(x=>w.dataset.n.includes(x)); w.hidden=!ok; if(ok&&w.closest("#sv_outros")) no++;});
+  const tot=document.querySelectorAll("#sv_outros .sv-wn").length;
+  sv_more.hidden=t.length>0||!tot; sv_more.textContent=SV.more?"Esconder os outros vinhos":`Mostrar os outros vinhos (${tot})`; }
 function svRender(fresh){
   if(typeof sv_vinhos==="undefined"||!document.getElementById("sv_vinhos")) return;
   const act=document.activeElement; if(act&&act.closest&&act.closest("[data-sec=saidas]")&&act.tagName!=="BUTTON") return; // não estragar o que se está a escrever
   if(!fresh) svRead(); if(!sv_data.value) sv_data.value=hoje(); svCliOpts();
-  const V=svVinhos(), ok=new Set(V.map(v=>v.k));
-  sv_vinhos.innerHTML=SV.L.map((l,i)=>{ const v=V.find(x=>x.k===l.k);
-    return `<div class="sv-l sv-lv"><select id="sv_vp${i}" aria-label="Vinho"><option value="">Escolher vinho…</option>${[["m","No mercado"],["o","Outros vinhos"]].map(([g,t])=>{const xs=V.filter(x=>x.g===g); return xs.length?`<optgroup label="${t}">${xs.map(x=>opt(x.k,`${x.n} · ${x.d}`,x.k===l.k)).join("")}</optgroup>`:"";}).join("")}${l.k&&!ok.has(l.k)?opt(l.k,pLid(l.k.split("|")[0])+" (sem stock)",true):""}</select>${svStep("sv_vq"+i,l.q)}${SV.L.length>1?`<button type="button" class="link sv-x" data-svdel="${i}">Retirar este vinho</button>`:""}</div>`; }).join("");
+  const V=svVinhos(); Object.keys(SV.q).forEach(k=>{if(!V.some(x=>x.k===k)) delete SV.q[k];});
+  sv_vinhos.innerHTML=svWines(V,"m")||`<p class="note">Não há vinhos no mercado com stock.</p>`;
+  sv_outros.innerHTML=svWines(V,"o"); svFilter();
   const C=svCaixas();
   sv_caixas.innerHTML=C.length?C.map(i=>`<div class="sv-l"><div class="sv-nm">${esc(i.nome)}<small>${int(i.st)} em stock${i.par?" · sai com a caixa de cartão":""}</small></div>${svStep("sv_cx_"+i.id,SV.cx[i.id]||0).replace(`id="sv_cx_${i.id}"`,`id="sv_cx_${i.id}" data-svcx="${esc(i.id)}"`)}</div>`).join(""):`<p class="note">Não há caixas no grupo "Embalagens de oferta" da matéria seca.</p>`;
-  svUlt();
+  svUlt(); svRead();
 }
 function svRep(ano){ // linhas de vinho das saídas, por pessoa e destino
   const M=ST.M.filter(m=>m.saidaId&&(!ano||String(m.data).startsWith(ano))), P={}, D=Object.values(SV_D).map(x=>x[0]);
@@ -3420,8 +3441,8 @@ function svUlt(){ svRepRender();
 async function svSave(btn){
   svRead(); const V=svVinhos(), C=svCaixas(), cli=SV.modo==="cliente";
   const lin=[], err=[];
-  SV.L.filter(l=>l.k&&l.q>0).forEach(l=>{const v=V.find(x=>x.k===l.k); if(!v){err.push("Um dos vinhos já não tem stock."); return;}
-    const tot=SV.L.filter(z=>z.k===l.k).reduce((s,z)=>s+z.q,0); if(tot>v.max+0.5) err.push(`${v.n} ${v.d}: só há ${int(v.max)}.`); lin.push({v,q:l.q});});
+  Object.entries(SV.q).filter(([,q])=>q>0).forEach(([k,q])=>{const v=V.find(x=>x.k===k); if(!v){err.push("Um dos vinhos já não tem stock."); return;}
+    if(q>v.max+0.5) err.push(`${v.n} ${v.d}: só há ${int(v.max)}.`); lin.push({v,q});});
   const cxs=C.filter(i=>(SV.cx[i.id]||0)>0).map(i=>({i,q:SV.cx[i.id]}));
   cxs.slice().forEach(({i,q})=>{ if(i.par) cxs.push({i:i.par,q}); });
   const cxNeg=cxs.filter(({i,q})=>q>i.st+0.5).map(({i})=>i.nome);
@@ -3440,16 +3461,16 @@ async function svSave(btn){
     for(const {i,q} of cxs) await ST.db.collection("ms_mov").doc().set({data:dt,itemId:i.id,tipo:"Uso",qtd:q,custo:num(i.custo),fornecedor:"",notas,saidaId:sid,destino,para,por,porNome,criadoEm:now});
   },cxNeg.length?`Saída registada. Atenção: o stock de ${cxNeg.join(", ")} ficou negativo; confirma a contagem na matéria seca.`:"Saída registada.");
   btn.disabled=false;
-  if(ok){SV.L=[{k:"",q:1}]; SV.cx={}; sv_para.value=""; sv_nota.value=""; document.activeElement&&document.activeElement.blur&&document.activeElement.blur(); svRender(true); try{window.scrollTo({top:0,behavior:"smooth"})}catch(e){}}
+  if(ok){SV.q={}; SV.cx={}; SV.more=false; sv_q.value=""; sv_para.value=""; sv_nota.value=""; document.activeElement&&document.activeElement.blur&&document.activeElement.blur(); svRender(true); try{window.scrollTo({top:0,behavior:"smooth"})}catch(e){}}
 }
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("button"); if(!b||!b.closest("[data-sec=saidas]")) return;
   if(b.dataset.svm){SV.modo=b.dataset.svm; document.querySelectorAll("[data-svm]").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); sv_cliF.hidden=SV.modo!=="cliente"; sv_paraF.hidden=SV.modo==="cliente"; return;}
   if(b.dataset.svs){const i=document.getElementById(b.dataset.svs); i.value=Math.max(0,Math.round(num(i.value))+num(b.dataset.d)); svRead(); return;}
-  if(b.dataset.svdel){svRead(); SV.L.splice(+b.dataset.svdel,1); b.blur(); svRender(true); return;}
-  if(b.id==="sv_addv"){svRead(); SV.L.push({k:"",q:1}); b.blur(); svRender(true); return;}
+  if(b.id==="sv_more"){SV.more=!SV.more; b.blur(); svFilter(); return;}
   if(b.id==="sv_save"){svSave(b); return;}
 });
 document.addEventListener("change",e=>{if(e.target.closest&&e.target.closest("[data-sec=saidas]")) svRead();});
+document.addEventListener("input",e=>{if(e.target.id==="sv_q") svFilter(); else if(e.target.closest&&e.target.closest("[data-sec=saidas]")) svRead();});
 document.addEventListener("focusout",e=>{if(e.target.closest&&e.target.closest("[data-sec=saidas]")) setTimeout(()=>{const a=document.activeElement; if(!(a&&a.closest&&a.closest("[data-sec=saidas]")&&a.tagName!=="BUTTON")) svRender();},50);});
 { const _sr=stRender; stRender=function(){_sr.apply(this,arguments); try{svRender()}catch(e){console.error(e)}};
   const _gr=gRender; gRender=function(){_gr.apply(this,arguments); try{svRender()}catch(e){console.error(e)}}; }
