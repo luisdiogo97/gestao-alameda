@@ -6,8 +6,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=f42efa81"></script>
-<script src="shim.js?v=f42efa81"></script>
+<script src="firebase-config.js?v=1c6bc84f"></script>
+<script src="shim.js?v=1c6bc84f"></script>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:") addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
 <title>Gestão Alameda</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -234,7 +234,7 @@ details summary{cursor:pointer;font-weight:600;color:var(--wine)}
 .sv-add{margin:10px 0 0;width:100%}
 .sv-search{width:100%;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--input);color:var(--ink);margin:0 0 6px}
 .sv-g{margin:10px 0 2px;font-size:12px;font-weight:700;color:var(--muted)}
-.sv-wn{padding:8px 0;border-bottom:1px solid var(--line)}
+.sv-wn{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
 .sv-wn .sv-nm{font-weight:600;font-size:15px}
 .sv-wn .sv-o{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px}
 .sv-wn .sv-o span{color:var(--muted);font-size:13px}
@@ -3377,8 +3377,7 @@ const svGestor=()=>["Administrador","Enóloga e gestora"].includes(ROLE.papel);
 function svVinhos(){ const A=stAgg(), o=[], E=allProd().filter(([,p])=>!isAzP(p));
   const merc=E.filter(([,p])=>pEst(p)==="mercado"), out=E.filter(([,p])=>pEst(p)!=="mercado").sort((a,b)=>String(a[1].nome).localeCompare(String(b[1].nome),"pt")||num(a[1].colheita)-num(b[1].colheita));
   [[merc,"m"],[out,"o"]].forEach(([L,g])=>L.forEach(([id,p])=>{ const x=A[id]; if(!x) return;
-    if(x.st>0) o.push({k:id+"|acabado",id,est:"acabado",n:pL(p),d:"com rótulo",max:x.st,g});
-    if(x.pil>0) o.push({k:id+"|pilha",id,est:"pilha",n:pL(p),d:"sem rótulo",max:x.pil,g}); }));
+    const ac=Math.max(0,x.st), pi=Math.max(0,x.pil); if(ac+pi>0) o.push({k:id,id,n:pL(p),ac,pi,max:ac+pi,g}); }));
   return o; }
 // caixas especiais (Luis): mala de cortiça 3 grf e caixas petfelt 1 e 2 grf; a caixa de cartão da mala sai sempre com a mala
 const SV_CX=[["inv-caixas-mala-cortica-3-grf-alameda-mala","Mala de cortiça 3 grf"],["caixa-petfelt-1-grf","Caixa petfelt 1 grf"],["caixa-petfelt-2-grf","Caixa petfelt 2 grf"]];
@@ -3394,7 +3393,7 @@ function svRead(){ document.querySelectorAll("[data-svw]").forEach(e=>{const q=M
   if(typeof sv_sum!=="undefined") sv_sum.textContent=g||nc?`A levar: ${g?`${int(g)} garrafa${g>1?"s":""}${nv>1?` (${nv} vinhos)`:""}`:""}${g&&nc?" e ":""}${nc?`${int(nc)} caixa${nc>1?"s":""}`:""}`:""; }
 function svWines(V,g){ const by={}, ord=[]; V.filter(x=>x.g===g).forEach(x=>{ if(!by[x.id]){by[x.id]=[]; ord.push(x.id);} by[x.id].push(x); });
   return ord.map(id=>{ const xs=by[id], on=xs.some(x=>SV.q[x.k]>0);
-    return `<div class="sv-wn${on?" on":""}" data-n="${esc((xs[0].n).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""))}"><div class="sv-nm">${esc(xs[0].n)}</div>${xs.map(x=>`<div class="sv-o"><span>${x.d}</span>${svStep(svWid(x.k),SV.q[x.k]||0).replace(`id="${svWid(x.k)}"`,`id="${svWid(x.k)}" data-svw="${esc(x.k)}"`)}</div>`).join("")}</div>`; }).join(""); }
+    const x=xs[0]; return `<div class="sv-wn${on?" on":""}" data-n="${esc(x.n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""))}"><div class="sv-nm">${esc(x.n)}</div>${svStep(svWid(x.k),SV.q[x.k]||0).replace(`id="${svWid(x.k)}"`,`id="${svWid(x.k)}" data-svw="${esc(x.k)}"`)}</div>`; }).join(""); }
 function svFilter(){ const t=(sv_q.value||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").split(/\s+/).filter(Boolean);
   const show=SV.more||t.length>0; sv_outros.hidden=!show; let no=0;
   document.querySelectorAll("#sv_vinhos .sv-wn,#sv_outros .sv-wn").forEach(w=>{const ok=t.every(x=>w.dataset.n.includes(x)); w.hidden=!ok; if(ok&&w.closest("#sv_outros")) no++;});
@@ -3435,14 +3434,15 @@ function svUlt(){ svRepRender();
   if(!L.length){sv_ult.innerHTML=`<p class="note">Ainda não há saídas registadas aqui.</p>`;return;}
   const cn=id=>id===SV_CF?"Cliente final":(ST.C[id]||{}).nome||"Cliente";
   sv_ult.innerHTML=L.map(s=>{ const quem=s.dest==="Cliente"?"Cliente · "+cn(s.cli):s.dest+(s.para?" · "+s.para:"");
-    const it=s.v.map(m=>`${int(m.qtd)} × ${pLid(m.produtoId)}${m.estado==="pilha"?" (sem rótulo)":""}`).concat(s.x.map(m=>`${int(m.qtd)} × ${esc(((G.MI||[]).find(i=>i.id===m.itemId)||{}).nome||m.itemId)}`));
+    const it=s.v.map(m=>`${int(m.qtd)} × ${pLid(m.produtoId)}`).concat(s.x.map(m=>`${int(m.qtd)} × ${esc(((G.MI||[]).find(i=>i.id===m.itemId)||{}).nome||m.itemId)}`));
     return `<div class="sv-u"><b>${esc(s.d||"")} · ${esc(quem)}</b><div>${it.map(esc).join("<br>")}</div><p class="note">Registado por ${esc(svPor(s.m))}</p></div>`; }).join("");
 }
 async function svSave(btn){
   svRead(); const V=svVinhos(), C=svCaixas(), cli=SV.modo==="cliente";
   const lin=[], err=[];
   Object.entries(SV.q).filter(([,q])=>q>0).forEach(([k,q])=>{const v=V.find(x=>x.k===k); if(!v){err.push("Um dos vinhos já não tem stock."); return;}
-    if(q>v.max+0.5) err.push(`${v.n} ${v.d}: só há ${int(v.max)}.`); lin.push({v,q});});
+    if(q>v.max+0.5){err.push(`${v.n}: só há ${int(v.max)}.`); return;}
+    const a=Math.min(q,v.ac); if(a>0) lin.push({v,est:"acabado",q:a}); if(q-a>0) lin.push({v,est:"pilha",q:q-a});});
   const cxs=C.filter(i=>(SV.cx[i.id]||0)>0).map(i=>({i,q:SV.cx[i.id]}));
   cxs.slice().forEach(({i,q})=>{ if(i.par) cxs.push({i:i.par,q}); });
   const cxNeg=cxs.filter(({i,q})=>q>i.st+0.5).map(({i})=>i.nome);
@@ -3457,7 +3457,7 @@ async function svSave(btn){
   btn.disabled=true;
   const ok=await stWrite(async()=>{
     if(cli&&cid===SV_CF&&!ST.C[SV_CF]&&svGestor()){ try{await ST.db.collection("clientes").doc(SV_CF).set({nome:"Cliente final",tipo:"Particular (loja da quinta)",nif:"",localidade:"",contacto:"",notas:"Criado pela saída do armazém",criadoEm:now});}catch(e){} }
-    for(const {v,q} of lin) await ST.db.collection("movimentos").doc().set({data:dt,tipo,estado:v.est,produtoId:v.id,qtd:q,preco:cli?preco(v.id):0,clienteId:cid,doc:"Saída do armazém",loteId:"",notas,saidaId:sid,destino,para,por,porNome,criadoEm:now});
+    for(const {v,est,q} of lin) await ST.db.collection("movimentos").doc().set({data:dt,tipo,estado:est,produtoId:v.id,qtd:q,preco:cli?preco(v.id):0,clienteId:cid,doc:"Saída do armazém",loteId:"",notas,saidaId:sid,destino,para,por,porNome,criadoEm:now});
     for(const {i,q} of cxs) await ST.db.collection("ms_mov").doc().set({data:dt,itemId:i.id,tipo:"Uso",qtd:q,custo:num(i.custo),fornecedor:"",notas,saidaId:sid,destino,para,por,porNome,criadoEm:now});
   },cxNeg.length?`Saída registada. Atenção: o stock de ${cxNeg.join(", ")} ficou negativo; confirma a contagem na matéria seca.`:"Saída registada.");
   btn.disabled=false;
