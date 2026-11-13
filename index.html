@@ -6,8 +6,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=521b299b"></script>
-<script src="shim.js?v=521b299b"></script>
+<script src="firebase-config.js?v=83704c90"></script>
+<script src="shim.js?v=83704c90"></script>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:") addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
 <title>Gestão Alameda</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -212,6 +212,29 @@ details summary{cursor:pointer;font-weight:600;color:var(--wine)}
 #ad_col,#lt_col,.lt_l,#vp_ano,#an_ph,#an_av{width:84px}
 
 .logo{display:block;height:72px;width:auto;margin:0 0 14px}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .logo{filter:invert(1)}}:root[data-theme="dark"] .logo{filter:invert(1)}
+/* Saídas do armazém */
+.sv-card{max-width:620px}
+.sv-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.sv-row label{font-weight:600}
+.sv-row input[type=text],.sv-row select{flex:1 1 auto;max-width:340px;min-width:0;width:auto;font-size:16px;padding:8px 10px}
+.sv-row input[type=date]{font-size:16px;padding:6px 8px}
+.sv-seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 4px}
+.sv-seg button{padding:12px;font-size:16px;font-weight:700;border-radius:10px;color:var(--muted)}
+.sv-seg .sv-w{grid-column:1 / -1}
+.sv-seg button[aria-pressed="true"]{background:var(--wine);color:#fff;border-color:var(--wine)}
+.sv-h{margin:18px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.sv-l{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.sv-l select{width:100%;min-width:0;font-size:16px;padding:8px 6px}
+.sv-l .sv-nm{font-weight:600}.sv-l .sv-nm small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.sv-q{display:flex;align-items:center;gap:4px}
+.sv-q button{width:40px;height:40px;padding:0;font-size:20px;font-weight:700;border-radius:10px}
+.sv-q input[type=number]{width:58px;height:40px;text-align:center;font-size:17px}
+.sv-lv select{grid-column:1 / -1}.sv-lv .sv-q{grid-column:2;grid-row:2}
+.sv-x{grid-column:1;grid-row:2;justify-self:start;font-size:13px}
+.sv-add{margin:8px 0 0}
+.sv-go{width:100%;margin-top:14px;padding:14px;font-size:17px}
+.sv-u{padding:10px 0;border-bottom:1px solid var(--line)}
+.sv-u b{display:block}.sv-u .note{margin:2px 0 0}
 /* ===== Telemóvel (v80) ===== */
 @media (max-width:700px){
   body{padding-left:max(10px, env(safe-area-inset-left, 0px));padding-right:max(10px, env(safe-area-inset-right, 0px));padding-top:max(8px, env(safe-area-inset-top, 0px));padding-bottom:calc(30px + env(safe-area-inset-bottom, 0px))}
@@ -271,6 +294,7 @@ header .logo{height:104px;margin:0 auto 6px}#hTitle,header .eyebrow{display:none
   <section id="stockApp" aria-label="Gestão">
     <div class="secnav" role="group" aria-label="Área">
       <button type="button" data-secb="vendas" aria-pressed="true">Stock e vendas</button>
+      <button type="button" data-secb="saidas" aria-pressed="false">Saídas do armazém</button>
       <button type="button" data-secb="cobr" aria-pressed="false">Cobranças</button>
       <button type="button" data-secb="vinha" aria-pressed="false">Vinha</button>
       <button type="button" data-secb="adega" aria-pressed="false">Granel e lotes</button>
@@ -461,6 +485,39 @@ header .logo{height:104px;margin:0 auto 6px}#hTitle,header .eyebrow{display:none
         </div>
         <div style="display:flex;gap:8px;margin-top:10px"><button type="button" id="st_csave" class="primary">Guardar cliente</button><button type="button" id="st_ccancel" hidden>Cancelar</button></div>
       </div>
+      </div>
+      <div data-sec="saidas" hidden>
+        <div class="card sv-card">
+          <h2>Saída do armazém</h2>
+          <p class="lead">Regista os vinhos e as caixas que tiraste do armazém e escolhe o destino.</p>
+          <div class="sv-row"><label for="sv_data">Data</label><input type="date" id="sv_data"></div>
+          <div class="sv-seg" role="group" aria-label="Para quê">
+            <button type="button" data-svm="cliente" aria-pressed="false">Cliente</button>
+            <button type="button" data-svm="oferta" aria-pressed="true">Oferta</button>
+            <button type="button" data-svm="consumo" aria-pressed="false">Consumo</button>
+            <button type="button" data-svm="movecho" aria-pressed="false">Movecho</button>
+            <button type="button" data-svm="casa" aria-pressed="false" class="sv-w">Casa da Alameda</button>
+          </div>
+          <div class="sv-row" id="sv_cliF" hidden><label for="sv_cli">Cliente</label><select id="sv_cli"></select></div>
+          <div class="sv-row" id="sv_paraF"><label for="sv_para">Para quem / motivo</label><input type="text" id="sv_para" placeholder="ex.: visita, prémio, amigo…"></div>
+          <h3 class="sv-h">Vinhos</h3>
+          <div id="sv_vinhos"></div>
+          <button type="button" id="sv_addv" class="sv-add">+ Outro vinho</button>
+          <h3 class="sv-h">Caixas especiais</h3>
+          <div id="sv_caixas"></div>
+          <div class="sv-row"><label for="sv_nota">Notas</label><input type="text" id="sv_nota" placeholder="opcional"></div>
+          <div id="sv_res" class="note"></div>
+          <button type="button" id="sv_save" class="primary sv-go">Registar saída</button>
+        </div>
+        <div class="card sv-card">
+          <h2>Garrafas registadas por pessoa</h2>
+          <p class="lead" id="sv_repL"></p>
+          <div class="scroll"><table id="sv_rep"></table></div>
+        </div>
+        <div class="card sv-card">
+          <h2>Últimas saídas</h2>
+          <div id="sv_ult"></div>
+        </div>
       </div>
       <div data-sec="cobr" hidden>
         <div class="kpis st-k" id="cb_k"></div>
@@ -1176,7 +1233,7 @@ document.addEventListener("pointerleave",()=>tipEl.classList.remove("on"));
 const TIPOS_CLI=["Particular (loja da quinta)","Restaurante","Garrafeira","Garrafeira HORECA","Distribuidor","Importador (exportação)","Colaborador","Comprador de uva","Comprador de granel","Destilaria / apoio do Estado","Outro"];
 const CANAL_CLI={"Particular (loja da quinta)":"Quinta","Restaurante":"Venda direta HORECA","Garrafeira":"Venda direta HORECA","Distribuidor":"Distribuidores","Importador (exportação)":"Exportação","Colaborador":"Outro","Outro":"Outro"};
 const T_ENT=["Engarrafamento","Stock inicial","Devolução","Acerto +"];
-const T_SAI=["Oferta / amostra","Prova na quinta","Quebra","Acerto −"];
+const T_SAI=["Oferta / amostra","Prova na quinta","Consumo","Movecho","Casa da Alameda","Quebra","Acerto −"];
 const pL=p=>String(p.nome||"")+(p.colheita?" "+p.colheita:"");
 const pLid=id=>ST.P[id]?pL(ST.P[id]):String(id||"");
 function prodSort(E){const g={}; E.forEach(([,p])=>{const k=String(p.nome); g[k]=Math.min(g[k]??Infinity,num(p.ordem))}); return E.sort((a,b)=>g[String(a[1].nome)]-g[String(b[1].nome)]||String(a[1].nome).localeCompare(String(b[1].nome),"pt")||num(b[1].colheita)-num(a[1].colheita));}
@@ -1292,15 +1349,15 @@ function stFillSelects(){
 
 /* cálculos */
 function stAgg(){
-  const a={}, z=()=>({ent:0,ven:0,out:0,pEnt:0,pOut:0,rot:0,gr:0});
+  const a={}, z=()=>({ent:0,ven:0,pVen:0,out:0,pEnt:0,pOut:0,rot:0,gr:0});
   Object.keys(ST.P).forEach(id=>a[id]=z());
   ST.M.forEach(m=>{const x=a[m.produtoId]||(a[m.produtoId]=z()), q=num(m.qtd), pil=m.estado==="pilha";
     if(m.tipo==="Rotulagem") x.rot+=q;
-    else if(m.tipo==="Venda") x.ven+=q;
+    else if(m.tipo==="Venda"){ x.ven+=q; if(pil) x.pVen+=q; }
     else if(sinal(m.tipo)<0){ if(pil) x.pOut+=q; else x.out+=q; }
     else { if(pil) x.pEnt+=q; else x.ent+=q; }});
   if(typeof G!=="undefined") G.L.forEach(l=>{const x=a[l.produtoId]; if(x) x.gr+=Math.max(0,gLote(l).rest);});
-  Object.values(a).forEach(x=>{x.pil=x.pEnt-x.rot-x.pOut; x.st=x.ent+x.rot-x.ven-x.out;});
+  Object.values(a).forEach(x=>{x.pil=x.pEnt-x.rot-x.pOut-x.pVen; x.st=x.ent+x.rot-(x.ven-x.pVen)-x.out;});
   return a;
 }
 
@@ -3176,6 +3233,7 @@ async function xlDownload(){
       let aoa=xlSection(k==="vendas"?el.querySelector('[data-spanel="stock"]'):el);
       if(k==="vendas"){const c=xlSection(el.querySelector('[data-spanel="clientes"]')); aoa=aoa.concat([["Clientes e vendas"]],c);}
       add("R "+n,xlSheet(X,aoa));});
+    try{ if(typeof svXl==="function") svXl(X,add,xlSheet); }catch(e){console.error(e)}
     XL_DATA.forEach(sp=>add(sp.sh,xlSheet(X,[["ID"].concat(sp.cols.map(c=>c[0]))].concat(sp.src().map(d=>[d.id].concat(xlOut(sp,d)))),[22].concat(sp.cols.map(c=>c[2]==="txt"&&c[0]!=="Hora"?24:14)))));
   }
   const data=X.write(wb,{bookType:"xlsx",type:"array"}), fn=`Alameda-relatorio-${hoje()}.xlsx`;
@@ -3297,6 +3355,102 @@ document.addEventListener("change",async e=>{
   catch(err){console.error(err); xlMsg("Não consegui ler o ficheiro. Confirma que é um Excel (.xlsx, .xls) ou .csv.");}
 });
 </script>
+<script>
+/* ---------- Saídas do armazém (v82): vinhos engarrafados (com ou sem rótulo) e caixas especiais ---------- */
+const SV={modo:"oferta",L:[{k:"",q:1}],cx:{}};
+const SV_CF="cliente-final";
+const SV_D={cliente:["Cliente","Venda"],oferta:["Oferta","Oferta / amostra"],consumo:["Consumo","Consumo"],movecho:["Movecho","Movecho"],casa:["Casa da Alameda","Casa da Alameda"]};
+const svDest=m=>m.destino&&SV_D[m.destino]?SV_D[m.destino][0]:m.tipo==="Venda"?"Cliente":m.tipo==="Oferta / amostra"?"Oferta":m.tipo||"";
+const svPor=m=>m.porNome||(m.por?usNome(m.por):"Sem nome");
+const svGestor=()=>["Administrador","Enóloga e gestora"].includes(ROLE.papel);
+function svVinhos(){ const A=stAgg(), o=[];
+  allProd().forEach(([id,p])=>{ if(isAzP(p)) return; const x=A[id]; if(!x) return;
+    if(x.st>0) o.push({k:id+"|acabado",id,est:"acabado",n:pL(p),d:"com rótulo",max:x.st});
+    if(x.pil>0) o.push({k:id+"|pilha",id,est:"pilha",n:pL(p),d:"sem rótulo",max:x.pil}); });
+  return o; }
+function svCaixas(){ let S=[]; try{S=gMSstock()}catch(e){} return S.filter(i=>String(i.grupo||"")==="Embalagens de oferta").sort((a,b)=>(b.st>0)-(a.st>0)||String(a.nome).localeCompare(String(b.nome),"pt")); }
+function svCliOpts(){ const v=sv_cli.value||SV_CF; let h=opt(SV_CF,"Cliente final",v===SV_CF);
+  cliList().filter(([id])=>id!==SV_CF).forEach(([id,c])=>h+=opt(id,c.nome,id===v)); sv_cli.innerHTML=h; }
+function svStep(id,q){return `<div class="sv-q"><button type="button" data-svs="${id}" data-d="-1" aria-label="Menos">−</button><input type="number" min="0" step="1" inputmode="numeric" id="${id}" value="${q}"><button type="button" data-svs="${id}" data-d="1" aria-label="Mais">+</button></div>`;}
+function svRead(){ SV.L.forEach((l,i)=>{const s=document.getElementById("sv_vp"+i), q=document.getElementById("sv_vq"+i); if(s) l.k=s.value; if(q) l.q=Math.max(0,Math.round(num(q.value)));});
+  document.querySelectorAll("[data-svcx]").forEach(e=>SV.cx[e.dataset.svcx]=Math.max(0,Math.round(num(e.value)))); }
+function svRender(fresh){
+  if(typeof sv_vinhos==="undefined"||!document.getElementById("sv_vinhos")) return;
+  const act=document.activeElement; if(act&&act.closest&&act.closest("[data-sec=saidas]")&&act.tagName!=="BUTTON") return; // não estragar o que se está a escrever
+  if(!fresh) svRead(); if(!sv_data.value) sv_data.value=hoje(); svCliOpts();
+  const V=svVinhos(), ok=new Set(V.map(v=>v.k));
+  sv_vinhos.innerHTML=SV.L.map((l,i)=>{ const v=V.find(x=>x.k===l.k);
+    return `<div class="sv-l sv-lv"><select id="sv_vp${i}" aria-label="Vinho"><option value="">Escolher vinho…</option>${V.map(x=>opt(x.k,`${x.n} · ${x.d} (${int(x.max)})`,x.k===l.k)).join("")}${l.k&&!ok.has(l.k)?opt(l.k,pLid(l.k.split("|")[0])+" (sem stock)",true):""}</select>${svStep("sv_vq"+i,l.q)}${SV.L.length>1?`<button type="button" class="link sv-x" data-svdel="${i}">Retirar este vinho</button>`:""}</div>`; }).join("");
+  const C=svCaixas();
+  sv_caixas.innerHTML=C.length?C.map(i=>`<div class="sv-l"><div class="sv-nm">${esc(i.nome)}<small>${int(i.st)} em stock</small></div>${svStep("sv_cx_"+i.id,SV.cx[i.id]||0).replace(`id="sv_cx_${i.id}"`,`id="sv_cx_${i.id}" data-svcx="${esc(i.id)}"`)}</div>`).join(""):`<p class="note">Não há caixas no grupo "Embalagens de oferta" da matéria seca.</p>`;
+  svUlt();
+}
+function svRep(ano){ // linhas de vinho das saídas, por pessoa e destino
+  const M=ST.M.filter(m=>m.saidaId&&(!ano||String(m.data).startsWith(ano))), P={}, D=Object.values(SV_D).map(x=>x[0]);
+  M.forEach(m=>{const k=svPor(m), r=P[k]||(P[k]={t:0}); const d=svDest(m); r[d]=(r[d]||0)+num(m.qtd); r.t+=num(m.qtd);});
+  return {D,rows:Object.entries(P).sort((a,b)=>b[1].t-a[1].t)};}
+function svRepRender(){ const ano=typeof gAno==="function"?gAno():hoje().slice(0,4), R=svRep(ano);
+  sv_repL.textContent=`Garrafas de vinho tiradas do armazém em ${ano}, por quem registou.`;
+  if(!R.rows.length){sv_rep.innerHTML=`<tbody><tr><td class="note">Sem saídas em ${ano}.</td></tr></tbody>`;return;}
+  const tot={t:0}; R.rows.forEach(([,r])=>{R.D.forEach(d=>tot[d]=(tot[d]||0)+(r[d]||0)); tot.t+=r.t;});
+  sv_rep.innerHTML=`<thead><tr><th>Pessoa</th>${R.D.map(d=>`<th>${esc(d)}</th>`).join("")}<th>Total</th></tr></thead><tbody>${R.rows.map(([n,r])=>`<tr><td>${esc(n)}</td>${R.D.map(d=>`<td>${r[d]?int(r[d]):""}</td>`).join("")}<td><b>${int(r.t)}</b></td></tr>`).join("")}</tbody><tfoot><tr class="tot"><td>Total</td>${R.D.map(d=>`<td>${tot[d]?int(tot[d]):""}</td>`).join("")}<td>${int(tot.t)}</td></tr></tfoot>`;}
+function svXl(X,add,xlSheet){ // folhas para o Excel
+  const ano=typeof gAno==="function"?gAno():hoje().slice(0,4), R=svRep(ano), cn=id=>id===SV_CF?"Cliente final":(ST.C[id]||{}).nome||"";
+  const a=[[`Garrafas tiradas do armazém em ${ano}, por pessoa`],["Pessoa",...R.D,"Total"]].concat(R.rows.map(([n,r])=>[n,...R.D.map(d=>r[d]||0),r.t]));
+  add("R Saídas por pessoa",xlSheet(X,a));
+  const L=[["Data","Registado por","Destino","Cliente","Para quem / motivo","Artigo","Com rótulo","Quantidade","Notas"]];
+  ST.M.filter(m=>m.saidaId).forEach(m=>L.push([m.data,svPor(m),svDest(m),cn(m.clienteId),m.para||"",pLid(m.produtoId),m.estado==="pilha"?"Não":"Sim",num(m.qtd),m.notas||""]));
+  ((typeof G!=="undefined"&&G.MM)||[]).filter(m=>m.saidaId).forEach(m=>L.push([m.data,svPor(m),svDest(m),"",m.para||"",((G.MI||[]).find(i=>i.id===m.itemId)||{}).nome||m.itemId,"",num(m.qtd),m.notas||""]));
+  add("R Saídas do armazém",xlSheet(X,[L[0]].concat(L.slice(1).sort((x,y)=>String(y[0]).localeCompare(String(x[0]))))));}
+function svUlt(){ svRepRender();
+  const g={}; ST.M.filter(m=>m.saidaId).forEach(m=>{(g[m.saidaId]=g[m.saidaId]||{d:m.data,c:m.criadoEm,t:m.tipo,dest:svDest(m),cli:m.clienteId,para:m.para||"",m,v:[],x:[]}).v.push(m);});
+  ((typeof G!=="undefined"&&G.MM)||[]).filter(m=>m.saidaId).forEach(m=>{(g[m.saidaId]=g[m.saidaId]||{d:m.data,c:m.criadoEm,t:"",dest:svDest(m),cli:"",para:m.para||"",m,v:[],x:[]}).x.push(m);});
+  const L=Object.values(g).sort((a,b)=>String(b.d+b.c).localeCompare(String(a.d+a.c))).slice(0,15);
+  if(!L.length){sv_ult.innerHTML=`<p class="note">Ainda não há saídas registadas aqui.</p>`;return;}
+  const cn=id=>id===SV_CF?"Cliente final":(ST.C[id]||{}).nome||"Cliente";
+  sv_ult.innerHTML=L.map(s=>{ const quem=s.dest==="Cliente"?"Cliente · "+cn(s.cli):s.dest+(s.para?" · "+s.para:"");
+    const it=s.v.map(m=>`${int(m.qtd)} × ${pLid(m.produtoId)}${m.estado==="pilha"?" (sem rótulo)":""}`).concat(s.x.map(m=>`${int(m.qtd)} × ${esc(((G.MI||[]).find(i=>i.id===m.itemId)||{}).nome||m.itemId)}`));
+    return `<div class="sv-u"><b>${esc(s.d||"")} · ${esc(quem)}</b><div>${it.map(esc).join("<br>")}</div><p class="note">Registado por ${esc(svPor(s.m))}</p></div>`; }).join("");
+}
+async function svSave(btn){
+  svRead(); const V=svVinhos(), C=svCaixas(), cli=SV.modo==="cliente";
+  const lin=[], err=[];
+  SV.L.filter(l=>l.k&&l.q>0).forEach(l=>{const v=V.find(x=>x.k===l.k); if(!v){err.push("Um dos vinhos já não tem stock."); return;}
+    const tot=SV.L.filter(z=>z.k===l.k).reduce((s,z)=>s+z.q,0); if(tot>v.max+0.5) err.push(`${v.n} ${v.d}: só há ${int(v.max)}.`); lin.push({v,q:l.q});});
+  const cxs=C.filter(i=>(SV.cx[i.id]||0)>0).map(i=>({i,q:SV.cx[i.id]}));
+  const cxNeg=cxs.filter(({i,q})=>q>i.st+0.5).map(({i})=>i.nome);
+  if(!lin.length&&!cxs.length){stMsg("Escolhe pelo menos um vinho ou uma caixa, com a quantidade.");return;}
+  if(err.length){stMsg([...new Set(err)].join(" "));return;}
+  const dt=sv_data.value||hoje(), now=new Date().toISOString(), sid="sv"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const cid=cli?(sv_cli.value||SV_CF):"", para=cli?"":sv_para.value.trim(), nota=sv_nota.value.trim(), por=ROLE.uid||"", destino=SV.modo, tipo=SV_D[destino][1];
+  let porNome=""; try{ if(por&&ROLE.user&&ROLE.user.profiles){const ps=await ROLE.user.profiles([por]); porNome=(ps[por]&&ps[por].name)||"";} }catch(e){}
+  const ctipo=cid===SV_CF?"Particular (loja da quinta)":(ST.C[cid]||{}).tipo||"";
+  const preco=pid=>{const p=ST.P[pid]; if(!p) return 0; const k=PRECO_T[ctipo]||"pvpS"; const v=k==="pvpS"?num(p.pvp)/(1+pIva(p)/100):k==="pColabS"?num(p.pColab)/(1+pIva(p)/100):num(p[k]); return v?r2(v):0;};
+  const notas=["Saída do armazém",SV_D[destino][0],para,nota].filter(Boolean).join(" · ");
+  btn.disabled=true;
+  const ok=await stWrite(async()=>{
+    if(cli&&cid===SV_CF&&!ST.C[SV_CF]&&svGestor()){ try{await ST.db.collection("clientes").doc(SV_CF).set({nome:"Cliente final",tipo:"Particular (loja da quinta)",nif:"",localidade:"",contacto:"",notas:"Criado pela saída do armazém",criadoEm:now});}catch(e){} }
+    for(const {v,q} of lin) await ST.db.collection("movimentos").doc().set({data:dt,tipo,estado:v.est,produtoId:v.id,qtd:q,preco:cli?preco(v.id):0,clienteId:cid,doc:"Saída do armazém",loteId:"",notas,saidaId:sid,destino,para,por,porNome,criadoEm:now});
+    for(const {i,q} of cxs) await ST.db.collection("ms_mov").doc().set({data:dt,itemId:i.id,tipo:"Uso",qtd:q,custo:num(i.custo),fornecedor:"",notas,saidaId:sid,destino,para,por,porNome,criadoEm:now});
+  },cxNeg.length?`Saída registada. Atenção: o stock de ${cxNeg.join(", ")} ficou negativo; confirma a contagem na matéria seca.`:"Saída registada.");
+  btn.disabled=false;
+  if(ok){SV.L=[{k:"",q:1}]; SV.cx={}; sv_para.value=""; sv_nota.value=""; document.activeElement&&document.activeElement.blur&&document.activeElement.blur(); svRender(true); try{window.scrollTo({top:0,behavior:"smooth"})}catch(e){}}
+}
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("button"); if(!b||!b.closest("[data-sec=saidas]")) return;
+  if(b.dataset.svm){SV.modo=b.dataset.svm; document.querySelectorAll("[data-svm]").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); sv_cliF.hidden=SV.modo!=="cliente"; sv_paraF.hidden=SV.modo==="cliente"; return;}
+  if(b.dataset.svs){const i=document.getElementById(b.dataset.svs); i.value=Math.max(0,Math.round(num(i.value))+num(b.dataset.d)); svRead(); return;}
+  if(b.dataset.svdel){svRead(); SV.L.splice(+b.dataset.svdel,1); b.blur(); svRender(true); return;}
+  if(b.id==="sv_addv"){svRead(); SV.L.push({k:"",q:1}); b.blur(); svRender(true); return;}
+  if(b.id==="sv_save"){svSave(b); return;}
+});
+document.addEventListener("change",e=>{if(e.target.closest&&e.target.closest("[data-sec=saidas]")) svRead();});
+document.addEventListener("focusout",e=>{if(e.target.closest&&e.target.closest("[data-sec=saidas]")) setTimeout(()=>{const a=document.activeElement; if(!(a&&a.closest&&a.closest("[data-sec=saidas]")&&a.tagName!=="BUTTON")) svRender();},50);});
+{ const _sr=stRender; stRender=function(){_sr.apply(this,arguments); try{svRender()}catch(e){console.error(e)}};
+  const _gr=gRender; gRender=function(){_gr.apply(this,arguments); try{svRender()}catch(e){console.error(e)}}; }
+// cria o "Cliente final" na lista de clientes quando um gestor entra
+setInterval(()=>{ try{ if(ST.db&&ST.ready.c&&svGestor()&&!ST.C[SV_CF]&&!SV.cfTried){SV.cfTried=1; ST.db.collection("clientes").doc(SV_CF).set({nome:"Cliente final",tipo:"Particular (loja da quinta)",nif:"",localidade:"",contacto:"",notas:"Para vendas a particulares sem ficha",criadoEm:new Date().toISOString()}).catch(()=>{});} }catch(e){} },3000);
+</script>
+
 <script>
 /* Telemóvel (v80): tabelas largas passam a cartões, com o nome da coluna em cada valor. */
 (function(){
