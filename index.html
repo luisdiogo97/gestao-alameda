@@ -6,8 +6,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=3475135a"></script>
-<script src="shim.js?v=3475135a"></script>
+<script src="firebase-config.js?v=175918f5"></script>
+<script src="shim.js?v=175918f5"></script>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:") addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
 <title>Gestão Alameda</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -245,6 +245,27 @@ details summary{cursor:pointer;font-weight:600;color:var(--wine)}
 .sv-u b{display:block}.sv-u .note{margin:2px 0 0}
 .mapfr{position:relative}.mapfr .mf-b{position:absolute;left:8px;top:8px;z-index:6;min-height:0;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.95);color:#222;border:1px solid rgba(0,0,0,.18);font-weight:700;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.18)}
 .mapfr.pz-full{display:block;padding:0}.mapfr.pz-full iframe{width:100%!important;height:100%!important;border:0!important;border-radius:0!important}.mapfr.pz-full .mf-b{top:max(8px,env(safe-area-inset-top,0px))}
+/* ===== Início no telemóvel (v89) ===== */
+#mh,#mbar{display:none}
+@media (max-width:700px){
+  body.m-home #mh{display:block}
+  body.m-home .secnav,body.m-home .pane,body.m-home #xl_msg,body.m-home #xl_box{display:none!important}
+  body.m-sec .secnav{display:none!important}
+  body.m-sec #mbar{display:flex}
+  body.m-sec header{display:none}
+  .m-hide{display:none!important}
+  #mbar{position:sticky;top:0;z-index:31;align-items:center;gap:10px;background:var(--bg);margin:0 -10px 8px;padding:8px 10px;border-bottom:1px solid var(--line)}
+  #mbar button{flex:none;min-height:40px;padding:8px 14px;border-radius:999px;font-weight:700;color:var(--wine);background:var(--wine-soft);border-color:transparent}
+  #mbar b{font-size:17px;font-family:var(--display,inherit);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #mh .mh-q{font-size:20px;font-weight:700;margin:4px 2px 12px;font-family:var(--display,inherit)}
+  #mh h3{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 2px 8px}
+  #mh .mh-g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  #mh .mh-t{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:10px;min-height:96px;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-align:left;font-weight:700;font-size:15px;line-height:1.2;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  #mh .mh-t .i{font-size:26px;line-height:1}
+  #mh .mh-t.pri{background:var(--wine);color:#fff;border-color:var(--wine)}
+  #mh .mh-t small{display:block;font-weight:400;font-size:12px;opacity:.75;margin-top:3px}
+  #mh .mh-all{width:100%;margin-top:16px;padding:14px;border-radius:12px;font-weight:700}
+}
 /* ===== Telemóvel (v80) ===== */
 @media (max-width:700px){
   body{padding-left:max(10px, env(safe-area-inset-left, 0px));padding-right:max(10px, env(safe-area-inset-right, 0px));padding-top:max(8px, env(safe-area-inset-top, 0px));padding-bottom:calc(30px + env(safe-area-inset-bottom, 0px))}
@@ -3567,6 +3588,70 @@ setInterval(()=>{ try{ if(ST.db&&ST.ready.c&&svGestor()&&!ST.C[SV_CF]&&!SV.cfTri
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",go); else go();
 })();
 </script>
+<script>
+/* Início no telemóvel (v89): botões grandes para as tarefas do dia a dia; dentro de cada área, "‹ Início" para voltar */
+(function(){
+  var mq=matchMedia("(max-width:700px)");
+  var T=[
+    ["Registar",[
+      ["🍷","Saída do armazém","ofertas, consumo, clientes","saidas",null,null,null,1],
+      ["🧾","Venda","com fatura","vendas","stab","registar","Venda"],
+      ["📦","Engarrafamento ou entrada","garrafas que entram","vendas","stab","registar","Entrada em stock"],
+      ["🏷️","Rotulagem","pilha → rotulado","vendas","stab","registar","Rotulagem"],
+      ["🛢️","Mudar conteúdo de cuba","encher, trasfegar, esvaziar","adega","atab","esq","Mudar conteúdo"],
+      ["🧪","Análise","de um lote ou cuba","adega","atab","anal","Nova análise"],
+      ["🍇","Vindima","uvas que entram ou vendidas","vinha","vtab","vind",null],
+      ["📅","Reserva de visita","enoturismo","eno","etab","res",null]
+    ]],
+    ["Consultar",[
+      ["📊","Stock de vinho","garrafas por referência","vendas","stab","stock",null],
+      ["🗺️","Esquema da adega","cubas e barricas","adega","atab","planta",null],
+      ["🍶","Lotes e granel","litros por lote","adega","atab","lotes",null],
+      ["🌱","Mapa da vinha","parcelas e castas","vinha","vtab","mapa",null],
+      ["📦","Matéria seca","rolhas, rótulos, caixas","ms",null,null,null],
+      ["🫒","Azeite","stock e produção","azeite",null,null,null],
+      ["💶","Cobranças","faturas em aberto","cobr",null,null,null],
+      ["🧭","Mapas da quinta","para visitantes","eno","etab","map",null]
+    ]]
+  ];
+  var NAMES={}; document.querySelectorAll("[data-secb]").forEach(function(b){NAMES[b.dataset.secb]=b.textContent.trim();});
+  var app=document.getElementById("stockApp"); if(!app) return;
+  var mh=document.createElement("div"); mh.id="mh"; var bar=document.createElement("div"); bar.id="mbar";
+  bar.innerHTML='<button type="button" id="mbar_b">‹ Início</button><b id="mbar_t"></b>';
+  app.insertBefore(mh,app.firstChild); app.insertBefore(bar,mh.nextSibling);
+  function secBtn(s){return document.querySelector('[data-secb="'+s+'"]');}
+  function ok(t){ var b=secBtn(t[3]); if(!b||b.hidden) return false; if(t[4]){var tb=document.querySelector('['+'data-'+t[4]+'="'+t[5]+'"]'); if(!tb||tb.hidden) return false;}
+    if(t[6]){ var h=h2(t[6]); if(!h) return false; var c=h.closest(".card"); if(c&&c.hidden) return false; } return true; }
+  function h2(txt){ return [].slice.call(document.querySelectorAll("#stockApp h2")).find(function(h){return h.textContent.trim()===txt;}); }
+  function draw(){ var h='<div class="mh-q">O que vais fazer?</div>';
+    T.forEach(function(g,gi){ var ts=g[1].map(function(t,i){return [t,gi+"_"+i];}).filter(function(x){return ok(x[0]);}); if(!ts.length) return;
+      h+='<h3>'+g[0]+'</h3><div class="mh-g">'+ts.map(function(x){var t=x[0]; return '<button type="button" class="mh-t'+(t[7]?" pri":"")+'" data-mh="'+x[1]+'"><span class="i" aria-hidden="true">'+t[0]+'</span><span>'+t[1]+'<small>'+t[2]+'</small></span></button>';}).join("")+'</div>'; });
+    h+='<h3>Todas as áreas</h3><div class="mh-g">'+[].slice.call(document.querySelectorAll("[data-secb]")).filter(function(b){return !b.hidden;}).map(function(b){return '<button type="button" class="mh-t" data-mhs="'+b.dataset.secb+'"><span>'+b.textContent.trim()+'</span></button>';}).join("")+'</div>';
+    mh.innerHTML=h; }
+  function unfocus(){ [].slice.call(document.querySelectorAll(".m-hide")).forEach(function(e){e.classList.remove("m-hide");}); }
+  function focus(c){ unfocus(); var el=c; while(el&&el.parentNode&&!(el.matches&&el.matches("[data-sec]"))){ [].slice.call(el.parentNode.children).forEach(function(x){ if(x!==el&&x.tagName!=="SCRIPT") x.classList.add("m-hide"); }); el=el.parentNode; } }
+  function home(push){ unfocus(); document.body.classList.add("m-home"); document.body.classList.remove("m-sec"); draw(); scrollTo(0,0); if(push!==false){ try{history.replaceState({mh:"home"},"");}catch(e){} } }
+  function open(sec,tabA,tabV,anchor,title){
+    var b=secBtn(sec); if(b) b.click();
+    if(tabA){ var tb=document.querySelector('[data-'+tabA+'="'+tabV+'"]'); if(tb) tb.click(); }
+    document.body.classList.remove("m-home"); document.body.classList.add("m-sec");
+    document.getElementById("mbar_t").textContent=title||NAMES[sec]||"";
+    try{history.pushState({mh:"sec"},"");}catch(e){}
+    unfocus(); setTimeout(function(){ var h=anchor&&h2(anchor); if(h){ focus(h.closest(".card")||h); } scrollTo(0,0); },60);
+  }
+  document.addEventListener("click",function(e){ var t=e.target.closest&&e.target.closest("[data-mh],[data-mhs],#mbar_b"); if(!t) return;
+    if(t.id==="mbar_b"){ if(history.state&&history.state.mh==="sec") history.back(); else home(); return; }
+    if(t.dataset.mhs){ open(t.dataset.mhs,null,null,null,NAMES[t.dataset.mhs]); return; }
+    var k=t.dataset.mh.split("_"), d=T[+k[0]][1][+k[1]]; open(d[3],d[4]?d[4]:null,d[5],d[6],d[1]); });
+  addEventListener("popstate",function(){ if(mq.matches) home(false); });
+  function apply(){ if(mq.matches){ if(!document.body.classList.contains("m-sec")) home(); } else { document.body.classList.remove("m-home","m-sec"); } }
+  if(mq.addEventListener) mq.addEventListener("change",apply);
+  // redesenha quando os papéis mudam o que se vê
+  new MutationObserver(function(){ if(document.body.classList.contains("m-home")) draw(); }).observe(document.querySelector(".secnav")||document.body,{attributes:true,subtree:true,attributeFilter:["hidden"]});
+  apply();
+})();
+</script>
+
 <script>
 /* Telemóvel (v80): tabelas largas passam a cartões, com o nome da coluna em cada valor. */
 (function(){
