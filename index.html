@@ -6,8 +6,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=1abae93a"></script>
-<script src="shim.js?v=1abae93a"></script>
+<script src="firebase-config.js?v=bbeaabcb"></script>
+<script src="shim.js?v=bbeaabcb"></script>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:") addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
 <title>Gestão Alameda</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -280,6 +280,28 @@ details summary{cursor:pointer;font-weight:600;color:var(--wine)}
 .ecal-day{margin-top:12px}.ecal-day .it{padding:10px 0;border-bottom:1px solid var(--line)}.ecal-day .it b{display:block}
 .ecal-leg{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}.ecal-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 @media (max-width:700px){.ecal .d{min-height:52px;padding:3px}.ecal .d .r{font-size:10px;padding:0 2px;text-overflow:clip}.ecal .d .r .pp{display:none}}
+/* v91: desfazer, venda e stock no telemóvel, cópia de segurança */
+#undo_t{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translate(-50%,140%);z-index:100;display:flex;align-items:center;gap:14px;max-width:calc(100vw - 24px);padding:10px 10px 10px 16px;border-radius:14px;background:#2b2320;color:#fff;box-shadow:0 6px 24px rgba(0,0,0,.25);transition:transform .2s;overflow:hidden;font-size:15px}
+#undo_t.on{transform:translate(-50%,0)}
+#undo_t span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+#undo_t button{flex:none;padding:9px 16px;border-radius:999px;border:0;background:#fff;color:#7a1f2b;font-weight:800;font-size:15px}
+#undo_t i{position:absolute;left:0;bottom:0;height:3px;background:#e8b4bb;width:100%}
+#undo_t.on i{animation:undoBar 10s linear forwards}
+@keyframes undoBar{to{width:0}}
+.m-only{display:none}.vt-nm{display:none;font-weight:600}
+.stm-r{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line)}
+.stm-r b{display:block;font-size:15px}.stm-r small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.stm-r.off{opacity:.55}.stm-f{color:var(--wine);font-weight:700}
+.stm-v{font-size:20px;font-weight:800;text-align:right;white-space:nowrap}.stm-v small{font-weight:400;font-size:11px;margin:0}.stm-v.neg{color:var(--wine)}
+#bk_ban{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 10px;padding:12px 14px;border-radius:12px;background:var(--wine-soft);border:1px solid var(--line)}
+#bk_ban b{display:block}#bk_ban span{font-size:14px}#bk_ban button{flex:none;font-weight:700}
+@media (max-width:700px){
+  .m-only{display:block}.m-no{display:none!important}
+  #st_vlines select[id^=st_lp],#st_vadd{display:none!important}
+  #st_vlines .vt-nm{display:block}
+  #st_vlines tr.vt-empty,#st_vlines.vt-none{display:none!important}
+  #bk_ban button{width:100%;padding:12px}
+}
 /* ===== Telemóvel (v80) ===== */
 @media (max-width:700px){
   body{padding-left:max(10px, env(safe-area-inset-left, 0px));padding-right:max(10px, env(safe-area-inset-right, 0px));padding-top:max(8px, env(safe-area-inset-top, 0px));padding-bottom:calc(30px + env(safe-area-inset-bottom, 0px))}
@@ -357,6 +379,7 @@ header .logo{height:104px;margin:0 auto 6px}#hTitle,header .eyebrow{display:none
     <div class="xlbar" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:-4px 0 10px">
       <button type="button" id="xl_down">Descarregar relatório em Excel</button>
       <button type="button" id="xl_up">Importar folhas Excel</button>
+      <button type="button" id="bk_down" hidden>Cópia de segurança</button>
       <input type="file" id="xl_file" accept=".xlsx,.xls,.xlsm,.csv" hidden>
       <span class="note" style="margin:0">O Excel descarregado serve de modelo para importar.</span>
     </div>
@@ -378,7 +401,7 @@ header .logo{height:104px;margin:0 auto 6px}#hTitle,header .eyebrow{display:none
       <div data-spanel="stock">
         <div class="kpis st-k" id="stK"></div>
         <div id="stVazio"></div>
-        <div class="scroll"><table id="stTbl"></table></div>
+        <div class="scroll m-no"><table id="stTbl"></table></div><div id="stMob" class="m-only"><input type="search" id="stm_q" class="sv-search" placeholder="Procurar vinho (ex.: parcelas 2023)" autocomplete="off"><div id="stm_l"></div></div>
         <p class="note">Três estados: granel (litros nos lotes ainda por engarrafar, em "Granel e lotes"), pilha (garrafas engarrafadas por rotular, em estágio) e acabado (rotulado e embalado, pronto a vender). O engarrafamento entra na pilha; a rotulagem passa da pilha para acabado; as vendas saem do acabado. O valor usa o custo por garrafa de cada produto (separador "Produtos"). O mínimo e o aviso "Repor" contam só o acabado.</p>
       </div>
 
@@ -398,6 +421,7 @@ header .logo{height:104px;margin:0 auto 6px}#hTitle,header .eyebrow{display:none
               <div class="field"><label for="st_ncnome">Nome do novo cliente</label><input type="text" id="st_ncnome"></div>
               <div class="field"><label for="st_nctipo">Tipo</label><select id="st_nctipo"></select></div>
             </div>
+            <div id="st_vtap" class="m-only"><h3 class="sv-h">Vinhos</h3><input type="search" id="st_vq" class="sv-search" placeholder="Procurar vinho (ex.: torreão 2020)" autocomplete="off"><div id="st_vtl"></div><button type="button" id="st_vmore" class="sv-add"></button><div id="st_vto" hidden></div><h3 class="sv-h" id="st_vsel">Preços desta venda</h3></div>
             <div class="scroll" style="margin-top:10px"><table id="st_vlines"></table></div>
             <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px">
               <button type="button" class="add" id="st_vadd">+ Linha</button>
@@ -1342,9 +1366,12 @@ async function stInit(){
 }
 async function stWrite(fn,okText){
   if(!ST.db){stMsg("Os registos não estão disponíveis.");return false}
-  try{await fn(); if(okText) stMsg(okText,"ok"); return true;}
+  // registos feitos em seguida (ex.: linhas da venda e a fatura) anulam-se juntos
+  let R=null; if(!UNDO.rec){ R=(UNDO.cur&&Date.now()-(UNDO.at||0)<2000)?UNDO.cur:{m:new Map(),off:false}; UNDO.rec=R; }
+  try{await fn(); if(okText) stMsg(okText,"ok"); if(R){UNDO.rec=null; UNDO.at=Date.now(); undoOffer(R,okText);} return true;}
   catch(e){
-    if(e&&e.code==="unavailable"){try{await new Promise(r=>setTimeout(r,800+Math.random()*800)); await fn(); if(okText) stMsg(okText,"ok"); return true;}catch(e2){e=e2}}
+    if(e&&e.code==="unavailable"){try{await new Promise(r=>setTimeout(r,800+Math.random()*800)); await fn(); if(okText) stMsg(okText,"ok"); if(R){UNDO.rec=null; UNDO.at=Date.now(); undoOffer(R,okText);} return true;}catch(e2){e=e2}}
+    if(R) UNDO.rec=null;
     stMsg(e&&e.code==="quota_exceeded"?"A base de dados está cheia. Apaga movimentos antigos antes de registar mais.":e&&e.code==="invalid_argument"?"Não tens permissão para registar, ou um campo é inválido.":"Não foi possível guardar. Tenta outra vez.");
     return false;
   }
@@ -2697,9 +2724,25 @@ function audit(a,path,d){ if(!ROLE.uid||!ST.rawDb||String(path).startsWith("regi
 async function audFlush(){ if(AUD.busy){AUD.again=true; return;} AUD.busy=true;
   try{ do{AUD.again=false; await ST.rawDb.collection("registo/"+ROLE.uid+"/dias").doc(AUD.dia+"_"+AUD.sid).set({uid:ROLE.uid,dia:AUD.dia,e:AUD.e.slice(-400)});}while(AUD.again);}catch(e){} AUD.busy=false;}
 function wrapRef(r,cp){const P=r.path||(cp?cp+"/"+r.id:r.id); return {id:r.id,path:P,get:()=>r.get(),onSnapshot:(...a)=>r.onSnapshot(...a),acquire:o=>r.acquire(o),
-  set:async d=>{await r.set(d); audit("Gravou",P,d);},update:async d=>{await r.update(d); audit("Alterou",P,d);},delete:async()=>{await r.delete(); audit("Apagou",P);}};}
+  set:async d=>{await undoSnap(r,P); await r.set(d); audit("Gravou",P,d);},update:async d=>{await undoSnap(r,P); await r.update(d); audit("Alterou",P,d);},delete:async()=>{await undoSnap(r,P); await r.delete(); audit("Apagou",P);}};}
 function wrapCol(c,cp){return {path:c.path||cp,where:(...a)=>c.where(...a),orderBy:(...a)=>c.orderBy(...a),limit:n=>c.limit(n),get:()=>c.get(),onSnapshot:(...a)=>c.onSnapshot(...a),
-  doc:(...a)=>wrapRef(c.doc(...a),c.path||cp),add:async d=>{const r=await c.add(d); audit("Gravou",r.path||((c.path||cp)+"/"+r.id),d); return r;}};}
+  doc:(...a)=>wrapRef(c.doc(...a),c.path||cp),add:async d=>{const r=await c.add(d); undoNew(r,r.path||((c.path||cp)+"/"+r.id)); audit("Gravou",r.path||((c.path||cp)+"/"+r.id),d); return r;}};}
+/* Desfazer (v91): durante um stWrite guarda o estado anterior de cada documento tocado */
+const UNDO={rec:null,cur:null,t:null};
+async function undoSnap(r,P){ const R=UNDO.rec; if(!R||R.off||R.m.has(P)) return; if(R.m.size>=25){R.off=true; return;}
+  const e={r,old:undefined}; R.m.set(P,e);
+  try{const x=await r.get(); const ex=typeof x.exists==="function"?x.exists():x.exists; e.old=ex?x.data():null;}catch(err){R.off=true;} }
+function undoNew(r,P){ const R=UNDO.rec; if(!R||R.off||R.m.has(P)) return; R.m.set(P,{r,old:null}); }
+function undoOffer(R,txt){ if(!R||R.off||!R.m.size) return; txt=txt||"Registo guardado."; const box=document.getElementById("undo_t")||(()=>{const d=document.createElement("div"); d.id="undo_t"; d.setAttribute("role","status"); document.body.appendChild(d); return d;})();
+  clearTimeout(UNDO.t); UNDO.cur=R; box.innerHTML=`<span>✓ ${esc(txt)}</span><button type="button" id="undo_b">Desfazer</button><i></i>`; box.className="on";
+  UNDO.t=setTimeout(()=>{box.className=""; UNDO.cur=null;},10000); }
+async function undoRun(){ const R=UNDO.cur, box=document.getElementById("undo_t"); if(!R) return; UNDO.cur=null; clearTimeout(UNDO.t);
+  if(box) box.innerHTML="<span>A anular…</span>";
+  try{ for(const [P,e] of [...R.m].reverse()){ if(e.old===undefined) continue; if(e.old===null) await e.r.delete(); else await e.r.set(e.old); audit("Desfez",P,e.old||{}); }
+    stMsg("Registo anulado. Ficou tudo como estava antes.","ok"); if(box) box.innerHTML="<span>✓ Registo anulado</span>";
+  }catch(err){ stMsg("Não foi possível anular. Corrige à mão."); if(box) box.innerHTML="<span>Não foi possível anular</span>"; }
+  setTimeout(()=>{if(box) box.className="";},2500); }
+document.addEventListener("click",e=>{ if(e.target&&e.target.id==="undo_b") undoRun(); });
 function wrapDb(raw){return {doc:p=>wrapRef(raw.doc(p),p.split("/").slice(0,-1).join("/")),collection:p=>wrapCol(raw.collection(p),p)};}
 function papelAtual(){ if(ROLE.owner) return "Administrador"; const m=(G.US&&G.US.membros)||{};
   if(ROLE.uid&&m[ROLE.uid]&&PAPEIS.includes(m[ROLE.uid].papel)) return m[ROLE.uid].papel;
@@ -3666,9 +3709,13 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
   function ok(t){ var b=secBtn(t[3]); if(!b||b.hidden) return false; if(t[4]){var tb=document.querySelector('['+'data-'+t[4]+'="'+t[5]+'"]'); if(!tb||tb.hidden) return false;}
     if(t[6]){ var h=h2(t[6]); if(!h) return false; var c=h.closest(".card"); if(c&&c.hidden) return false; } return true; }
   function h2(txt){ return [].slice.call(document.querySelectorAll("#stockApp h2")).find(function(h){return h.textContent.trim()===txt;}); }
-  function draw(){ var h='<div class="mh-q">O que vais fazer?</div>';
-    T.forEach(function(g,gi){ var ts=g[1].map(function(t,i){return [t,gi+"_"+i];}).filter(function(x){return ok(x[0]);}); if(!ts.length) return;
-      h+='<h3>'+g[0]+'</h3><div class="mh-g">'+ts.map(function(x){var t=x[0]; return '<button type="button" class="mh-t'+(t[7]?" pri":"")+'" data-mh="'+x[1]+'"><span class="i" aria-hidden="true">'+t[0]+'</span><span>'+t[1]+'<small>'+t[2]+'</small></span></button>';}).join("")+'</div>'; });
+  // v91: o adegueiro vê só as tarefas da adega, por esta ordem
+  var ADEGA=["Mudar conteúdo de cuba","Análise","Engarrafamento ou entrada","Rotulagem","Saída do armazém","Vindima","Esquema da adega","Lotes e granel","Stock de vinho","Matéria seca","Mapa da vinha"];
+  function adeg(){ try{return ROLE.papel==="Adegueiro";}catch(e){return false;} }
+  function draw(){ var A=adeg(), h='<div class="mh-q">'+(A?'Adega: o que vais fazer?':'O que vais fazer?')+'</div>';
+    T.forEach(function(g,gi){ var ts=g[1].map(function(t,i){return [t,gi+"_"+i];}).filter(function(x){return ok(x[0])&&(!A||ADEGA.indexOf(x[0][1])>=0);}); if(!ts.length) return;
+      if(A) ts.sort(function(x,y){return ADEGA.indexOf(x[0][1])-ADEGA.indexOf(y[0][1]);});
+      h+='<h3>'+g[0]+'</h3><div class="mh-g">'+ts.map(function(x){var t=x[0]; return '<button type="button" class="mh-t'+((A?t[1]==="Mudar conteúdo de cuba":t[7])?" pri":"")+'" data-mh="'+x[1]+'"><span class="i" aria-hidden="true">'+t[0]+'</span><span>'+t[1]+'<small>'+t[2]+'</small></span></button>';}).join("")+'</div>'; });
     h+='<h3>Todas as áreas</h3><div class="mh-g">'+[].slice.call(document.querySelectorAll("[data-secb]")).filter(function(b){return !b.hidden;}).map(function(b){return '<button type="button" class="mh-t" data-mhs="'+b.dataset.secb+'"><span>'+b.textContent.trim()+'</span></button>';}).join("")+'</div>';
     mh.innerHTML=h; }
   function unfocus(){ [].slice.call(document.querySelectorAll(".m-hide")).forEach(function(e){e.classList.remove("m-hide");}); }
@@ -3692,6 +3739,82 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
   // redesenha quando os papéis mudam o que se vê
   new MutationObserver(function(){ if(document.body.classList.contains("m-home")) draw(); }).observe(document.querySelector(".secnav")||document.body,{attributes:true,subtree:true,attributeFilter:["hidden"]});
   apply();
+})();
+</script>
+
+<script>
+/* v91: venda e stock no telemóvel como nas Saídas; cópia de segurança semanal */
+(function(){
+  const nrm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+  const $=id=>document.getElementById(id);
+  /* ---- Venda: lista de vinhos com − e + ---- */
+  const VT={more:false};
+  function vtProds(){ const E=prodList(), az=E.filter(([,p])=>isAzP(p)), w=E.filter(([,p])=>!isAzP(p));
+    const m=w.filter(([,p])=>pEst(p)==="mercado"), o=w.filter(([,p])=>pEst(p)!=="mercado").sort((a,b)=>String(a[1].nome).localeCompare(String(b[1].nome),"pt")||num(a[1].colheita)-num(b[1].colheita));
+    return {m:m.concat(az),o}; }
+  function vtLines(){ return [...Array(ST.linhas).keys()].map(i=>{const pr=$("st_lpr"+i); return {p:$("st_lp"+i).value,q:$("st_lq"+i).value,pr:pr.value,man:pr.dataset.man||""};}); }
+  function vtSet(L){ if(!L.length) L=[{p:"",q:"",pr:"",man:""}]; ST.linhas=L.length; stLines();
+    L.forEach((l,i)=>{$("st_lp"+i).value=l.p; $("st_lq"+i).value=l.q; const pr=$("st_lpr"+i); pr.value=l.pr; pr.dataset.man=l.man;}); stTotVenda(); }
+  function vtQty(){ const q={}; vtLines().forEach(l=>{ if(l.p) q[l.p]=(q[l.p]||0)+Math.max(0,Math.round(num(l.q))); }); return q; }
+  function vtChange(pid,val){ const L=vtLines(), i=L.findIndex(l=>l.p===pid), q=Math.max(0,Math.round(val));
+    if(i<0){ if(!q) return; const e=L.findIndex(l=>!l.p), n={p:pid,q:String(q),pr:String(precoSug(pid,st_vcli.value)),man:""}; if(e<0) L.push(n); else L[e]=n; }
+    else if(!q){ L.splice(i,1); for(let k=L.length-1;k>=0;k--) if(L[k].p===pid) L.splice(k,1); }
+    else { const tot=vtQty()[pid]||0; L[i].q=String(Math.max(1,num(L[i].q)+q-tot)); }
+    vtSet(L); }
+  function row(id,p,q){ return `<div class="sv-wn${q?" on":""}" data-n="${esc(nrm(pL(p)))}"><div class="sv-nm">${esc(pL(p))}</div><div class="sv-q"><button type="button" data-vts="${esc(id)}" data-d="-1" aria-label="Menos">−</button><input type="number" min="0" step="1" inputmode="numeric" data-vtq="${esc(id)}" value="${q||0}" aria-label="Garrafas de ${esc(pL(p))}"><button type="button" data-vts="${esc(id)}" data-d="1" aria-label="Mais">+</button></div></div>`; }
+  function vtRender(){ if(!$("st_vtl")) return; const a=document.activeElement; if(a&&a.closest&&a.closest("#st_vtap")&&a.tagName==="INPUT") return;
+    const P=vtProds(), q=vtQty(); $("st_vtl").innerHTML=P.m.map(([id,p])=>row(id,p,q[id])).join("")||`<p class="note">Não há produtos no mercado.</p>`;
+    $("st_vto").innerHTML=P.o.map(([id,p])=>row(id,p,q[id])).join(""); vtFilter(); }
+  function vtFilter(){ const t=nrm($("st_vq").value).split(/\s+/).filter(Boolean), show=VT.more||t.length>0; $("st_vto").hidden=!show;
+    document.querySelectorAll("#st_vtap .sv-wn").forEach(w=>w.hidden=!t.every(x=>w.dataset.n.includes(x)));
+    const tot=$("st_vto").children.length, b=$("st_vmore"); b.hidden=t.length>0||!tot; b.textContent=VT.more?"Esconder os outros vinhos":`Mostrar os outros vinhos (${tot})`; }
+  function vtSync(){ if(!$("st_vtl")) return; const q=vtQty(), a=document.activeElement;
+    document.querySelectorAll("[data-vtq]").forEach(i=>{ const v=q[i.dataset.vtq]||0; if(i!==a) i.value=v; i.closest(".sv-wn").classList.toggle("on",v>0); });
+    const tb=$("st_vlines"), any=vtLines().some(l=>l.p); if(tb) tb.classList.toggle("vt-none",!any); const h=$("st_vsel"); if(h) h.hidden=!any;
+    for(let i=0;i<ST.linhas;i++){ const s=$("st_lp"+i); if(!s) continue; const tr=s.closest("tr"); tr.classList.toggle("vt-empty",!s.value);
+      let n=tr.querySelector(".vt-nm"); if(!n){ n=document.createElement("span"); n.className="vt-nm"; s.parentNode.insertBefore(n,s); } n.textContent=s.value&&ST.P[s.value]?pL(ST.P[s.value]):""; } }
+  const _tot=stTotVenda; stTotVenda=function(){ const r=_tot.apply(this,arguments); try{vtSync()}catch(e){} return r; };
+  document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("[data-vts],#st_vmore"); if(!b) return;
+    if(b.id==="st_vmore"){ VT.more=!VT.more; vtFilter(); return; }
+    const id=b.dataset.vts; vtChange(id,(vtQty()[id]||0)+num(b.dataset.d)); });
+  document.addEventListener("input",e=>{ const t=e.target; if(t.id==="st_vq") vtFilter(); else if(t.id==="stm_q") stmFilter(); });
+  document.addEventListener("change",e=>{ const t=e.target; if(t.dataset&&t.dataset.vtq) vtChange(t.dataset.vtq,num(t.value)); });
+  /* ---- Stock: lista simples com procura ---- */
+  function stmRender(){ if(!$("stm_l")) return; const A=stAgg(), ps=allProd().filter(([id,p])=>!isAzP(p)&&A[id]&&(p.ativo!==false||A[id].st||A[id].pil||A[id].gr));
+    $("stm_l").innerHTML=ps.map(([id,p])=>{ const x=A[id], low=p.stockMin&&x.st<p.stockMin, neg=x.st<0||x.pil<0, f=neg?"Stock negativo":low?(x.pil>0?"Rotular":"Repor"):"";
+      const sub=[x.pil?`${int(x.pil)} por rotular`:"",x.gr?`${int(x.gr)} L a granel`:""].filter(Boolean).join(" · ");
+      return `<div class="stm-r${p.ativo===false?" off":""}" data-n="${esc(nrm(pL(p)+" "+(p.gama||"")))}"><div><b>${esc(pL(p))}</b>${sub||f?`<small>${esc(sub)}${f?` <span class="stm-f">${f}</span>`:""}</small>`:""}</div><div class="stm-v${x.st<0?" neg":""}">${int(x.st)}<small>garrafas</small></div></div>`; }).join("")||`<p class="note">Ainda não há produtos.</p>`;
+    stmFilter(); }
+  function stmFilter(){ const t=nrm($("stm_q").value).split(/\s+/).filter(Boolean); document.querySelectorAll("#stm_l .stm-r").forEach(r=>r.hidden=!t.every(x=>r.dataset.n.includes(x))); }
+  const _st=stRender; stRender=function(){ const r=_st.apply(this,arguments); try{stmRender(); vtRender(); vtSync();}catch(e){console.error(e)} return r; };
+  /* ---- Cópia de segurança (dados todos, no formato da página Importar) ---- */
+  const BK_COLS=["produtos","clientes","movimentos","faturas","lotes","granel_mov","recipientes","rec_mov","planta","parcelas","vindima","vindima_ano","analises","ms_itens","ms_mov","enol_itens","enol_mov","experiencias","reservas","despesas","ts_linhas","orcamento","ivv_colheita","ivv_exist","azeite_colheita","perfis","config"];
+  const bkGestor=()=>["Administrador","Enóloga e gestora"].includes(ROLE.papel);
+  let BK={ultimo:null,loaded:false};
+  async function bkDown(btn){ if(!ST.rawDb) return; const lbl=btn?btn.textContent:""; if(btn){btn.disabled=true; btn.textContent="A preparar…";}
+    try{ const out={}; let n=0;
+      for(const c of BK_COLS){ try{ const s=await ST.rawDb.collection(c).get(); const o={}; s.docs.forEach(d=>{o[d.id]=d.data(); n++;}); if(Object.keys(o).length) out[c]=o; }catch(e){} }
+      const fn=`alameda-copia-${hoje()}.json`, data=JSON.stringify({exportado:new Date().toISOString(),colecoes:out});
+      let dl=null; try{dl=window.claude&&window.claude.use?await claude.use("downloads"):null}catch(e){}
+      if(dl) await dl.save({filename:fn,data:new Blob([data],{type:"application/json"})});
+      else { const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([data],{type:"application/json"})); a.download=fn; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500); }
+      BK.ultimo=hoje(); try{ await ST.rawDb.doc("config/backup").set({ultimo:BK.ultimo,em:new Date().toISOString(),por:ROLE.uid||"",porNome:(typeof usNome==="function"&&ROLE.uid?usNome(ROLE.uid):"")||"",registos:n}); }catch(e){}
+      try{localStorage.setItem("alameda-bk",BK.ultimo)}catch(e){}
+      xlMsg(`Cópia de segurança descarregada (${int(n)} registos, ficheiro ${fn}). Guarda-a fora do telemóvel, por exemplo no email ou numa pasta da nuvem.`,"ok"); bkBan();
+    }catch(e){ xlMsg(e&&e.code==="declined"?"Descarga cancelada.":"Não foi possível fazer a cópia de segurança."); }
+    if(btn){btn.disabled=false; btn.textContent=lbl;} }
+  function bkDias(){ if(!BK.ultimo) return 999; return Math.floor((new Date(hoje())-new Date(BK.ultimo))/864e5); }
+  function bkBan(){ const b=$("bk_down"); if(b) b.hidden=!bkGestor(); let el=$("bk_ban");
+    const show=bkGestor()&&BK.loaded&&bkDias()>=7;
+    if(!show){ if(el) el.remove(); return; }
+    if(!el){ el=document.createElement("div"); el.id="bk_ban"; const ref=$("xl_msg"); ref.parentNode.insertBefore(el,ref); }
+    el.innerHTML=`<div><b>Cópia de segurança semanal</b><span>${BK.ultimo?`A última foi há ${bkDias()} dias (${esc(BK.ultimo)}).`:"Ainda não foi feita nenhuma."} Descarrega um ficheiro com todos os dados e guarda-o fora do telemóvel.</span></div><button type="button" id="bk_go">Fazer cópia agora</button>`; }
+  document.addEventListener("click",e=>{ const t=e.target; if(t.id==="bk_down"||t.id==="bk_go") bkDown(t); });
+  let tries=0; (function wait(){ if(!ST.rawDb){ if(++tries<240) setTimeout(wait,500); return; }
+    try{ BK.ultimo=localStorage.getItem("alameda-bk")||null; }catch(e){}
+    ST.rawDb.doc("config/backup").onSnapshot(s=>{ const ex=typeof s.exists==="function"?s.exists():s.exists, d=ex?s.data():null; if(d&&d.ultimo&&(!BK.ultimo||d.ultimo>BK.ultimo)) BK.ultimo=d.ultimo; BK.loaded=true; bkBan(); },()=>{BK.loaded=true; bkBan();});
+    setInterval(bkBan,60000); new MutationObserver(bkBan).observe($("g_papel")||document.body,{childList:true,characterData:true,subtree:true});
+  })();
 })();
 </script>
 
