@@ -6,8 +6,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=175918f5"></script>
-<script src="shim.js?v=175918f5"></script>
+<script src="firebase-config.js?v=1abae93a"></script>
+<script src="shim.js?v=1abae93a"></script>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:") addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
 <title>Gestão Alameda</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -266,6 +266,20 @@ details summary{cursor:pointer;font-weight:600;color:var(--wine)}
   #mh .mh-t small{display:block;font-weight:400;font-size:12px;opacity:.75;margin-top:3px}
   #mh .mh-all{width:100%;margin-top:16px;padding:14px;border-radius:12px;font-weight:700}
 }
+/* Calendário das reservas (v90) */
+.ecal-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.ecal-h b{font-size:17px;text-transform:capitalize;font-family:var(--display,inherit)}
+.ecal-h div{display:flex;gap:6px}.ecal-h button{min-width:40px;padding:6px 10px;border-radius:999px;font-weight:700}
+.ecal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.ecal .wd{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);text-align:center;padding:2px 0}
+.ecal .d{min-height:64px;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:4px;text-align:left;display:flex;flex-direction:column;gap:2px;cursor:pointer;color:var(--ink);font:inherit;min-width:0;overflow:hidden}
+.ecal .d.o{opacity:.35}.ecal .d.t{border-color:var(--wine);box-shadow:inset 0 0 0 1px var(--wine)}.ecal .d.s{background:var(--wine-soft)}
+.ecal .d .n{font-weight:700;font-size:13px}
+.ecal .d .r{font-size:11px;line-height:1.2;border-radius:4px;padding:1px 4px;background:var(--wine);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ecal .d .r.ok{background:var(--olive,#6b7a3a)}.ecal .d .r.x{background:none;color:var(--muted);text-decoration:line-through;padding:0}
+.ecal-day{margin-top:12px}.ecal-day .it{padding:10px 0;border-bottom:1px solid var(--line)}.ecal-day .it b{display:block}
+.ecal-leg{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}.ecal-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+@media (max-width:700px){.ecal .d{min-height:52px;padding:3px}.ecal .d .r{font-size:10px;padding:0 2px;text-overflow:clip}.ecal .d .r .pp{display:none}}
 /* ===== Telemóvel (v80) ===== */
 @media (max-width:700px){
   body{padding-left:max(10px, env(safe-area-inset-left, 0px));padding-right:max(10px, env(safe-area-inset-right, 0px));padding-top:max(8px, env(safe-area-inset-top, 0px));padding-bottom:calc(30px + env(safe-area-inset-bottom, 0px))}
@@ -1095,13 +1109,14 @@ header .logo{height:104px;margin:0 auto 6px}#hTitle,header .eyebrow{display:none
           </div>
         </div>
         <div data-epanel="res">
+          <div class="card" style="margin-bottom:14px"><h2>Calendário</h2><div id="en_cal"></div></div>
           <div class="kpis st-k" id="en_k"></div>
           <div class="cards">
             <div class="card wide"><h2>Visitantes por mês</h2><p class="lead" id="en_ml"></p><div class="cols" id="en_cols"></div></div>
           </div>
           <h3>Próximas reservas</h3>
           <div class="scroll"><table id="en_prox"></table></div>
-          <h3>Nova reserva</h3>
+          <h3 id="en_form">Nova reserva</h3>
           <div class="fields">
             <div class="field"><label for="en_data">Data</label><input type="date" id="en_data"></div>
             <div class="field"><label for="en_hora">Hora</label><input type="time" id="en_hora" value="11:00"></div>
@@ -3588,6 +3603,34 @@ setInterval(()=>{ try{ if(ST.db&&ST.ready.c&&svGestor()&&!ST.C[SV_CF]&&!SV.cfTri
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",go); else go();
 })();
 </script>
+<script>
+/* Calendário das reservas (v90): mês com as reservas; tocar num dia mostra-as e deixa marcar nova reserva nesse dia */
+const EC={y:+hoje().slice(0,4),m:+hoje().slice(5,7)-1,sel:hoje()};
+const EC_M=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+const ecIso=(y,m,d)=>`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+function ecRender(){
+  const el=document.getElementById("en_cal"); if(!el||typeof G==="undefined") return;
+  const by={}; (G.R||[]).forEach(r=>{(by[r.data]=by[r.data]||[]).push(r);}); Object.values(by).forEach(a=>a.sort((x,y)=>String(x.hora||"").localeCompare(String(y.hora||""))));
+  const first=new Date(EC.y,EC.m,1), off=(first.getDay()+6)%7, dim=new Date(EC.y,EC.m+1,0).getDate(), H=hoje();
+  const cells=[]; for(let i=0;i<42;i++){ const dt=new Date(EC.y,EC.m,1-off+i), iso=ecIso(dt.getFullYear(),dt.getMonth(),dt.getDate()); cells.push({iso,d:dt.getDate(),o:dt.getMonth()!==EC.m}); if(i>=34&&i%7===6&&dt.getMonth()!==EC.m) break; }
+  const chip=r=>{const c=r.estado==="Realizada"?"ok":r.estado==="Cancelada"?"x":""; return `<span class="r ${c}">${esc((r.hora||"").slice(0,5))}<span class="pp"> · ${int(num(r.pessoas))} p</span></span>`;};
+  let h=`<div class="ecal-h"><b>${EC_M[EC.m]} ${EC.y}</b><div><button type="button" data-ec="-1" aria-label="Mês anterior">‹</button><button type="button" data-ec="0">Hoje</button><button type="button" data-ec="1" aria-label="Mês seguinte">›</button></div></div>`;
+  h+=`<div class="ecal">`+["seg","ter","qua","qui","sex","sáb","dom"].map(w=>`<div class="wd">${w}</div>`).join("")+
+    cells.map(c=>{const rs=by[c.iso]||[], more=rs.length>2?`<span class="note" style="margin:0;font-size:10px">+${rs.length-2}</span>`:""; return `<button type="button" class="d${c.o?" o":""}${c.iso===H?" t":""}${c.iso===EC.sel?" s":""}" data-ecd="${c.iso}" aria-label="${c.iso}${rs.length?`, ${rs.length} reservas`:""}"><span class="n">${c.d}</span>${rs.slice(0,2).map(chip).join("")}${more}</button>`;}).join("")+`</div>`;
+  h+=`<div class="ecal-leg"><span><i style="background:var(--wine)"></i>Confirmada</span><span><i style="background:var(--olive,#6b7a3a)"></i>Realizada</span><span style="text-decoration:line-through">Cancelada</span></div>`;
+  const rs=by[EC.sel]||[], dl=new Date(EC.sel+"T12:00:00").toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"});
+  h+=`<div class="ecal-day"><h3 style="margin:0 0 4px">${esc(dl.charAt(0).toUpperCase()+dl.slice(1))}</h3>`+(rs.length?rs.map(r=>`<div class="it"><b>${esc(r.hora||"")} · ${esc(r.experiencia||"")}${r.pedido?` (${esc(r.pedido)})`:""}</b>${int(num(r.pessoas))} pessoas · ${esc(r.nome||"sem nome")}${r.contacto?` · ${esc(r.contacto)}`:""}${r.notas?`<br><span class="note" style="margin:0">${esc(r.notas)}</span>`:""}<br><span class="note" style="margin:0">${esc(r.estado||"")}</span>${r.estado==="Confirmada"&&ST.canW!==false?` <button type="button" class="link" data-gres="${esc(r.id)}|Realizada">Realizada</button> <button type="button" class="link" data-gres="${esc(r.id)}|Cancelada">Cancelar</button>`:""}</div>`).join(""):`<p class="note">Sem reservas neste dia.</p>`)+
+    (ST.canW===false?"":`<button type="button" class="primary" data-ecnew="${EC.sel}" style="margin-top:10px">+ Nova reserva neste dia</button>`)+`</div>`;
+  el.innerHTML=h;
+}
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-ec],[data-ecd],[data-ecnew]"); if(!b) return;
+  if(b.dataset.ec!=null){ const v=+b.dataset.ec; if(v===0){EC.y=+hoje().slice(0,4); EC.m=+hoje().slice(5,7)-1; EC.sel=hoje();} else {EC.m+=v; if(EC.m<0){EC.m=11;EC.y--;} if(EC.m>11){EC.m=0;EC.y++;}} ecRender(); return; }
+  if(b.dataset.ecd){ EC.sel=b.dataset.ecd; const d=new Date(EC.sel+"T12:00:00"); if(d.getMonth()!==EC.m){EC.y=d.getFullYear(); EC.m=d.getMonth();} ecRender(); return; }
+  if(b.dataset.ecnew){ const i=document.getElementById("en_data"); i.value=b.dataset.ecnew; const f=document.getElementById("en_nome")||i; (document.getElementById("en_form")||i).scrollIntoView({block:"start",behavior:"smooth"}); setTimeout(()=>{try{document.getElementById("en_hora").focus()}catch(_){}},400); }
+});
+{ const _ge=gEno; gEno=function(){ _ge.apply(this,arguments); try{ecRender()}catch(e){console.error(e)} }; }
+</script>
+
 <script>
 /* Início no telemóvel (v89): botões grandes para as tarefas do dia a dia; dentro de cada área, "‹ Início" para voltar */
 (function(){
